@@ -1,8 +1,12 @@
 import Mutex from './mutex';
 import {
-  decodeBase64, getDigestHex, getUInt8Buffer, IDataType, writeHexToUInt8,
+  decodeBase64,
+  getDigestHex,
+  getUInt8Buffer,
+  writeHexToUInt8,
   hexStringEqualsUInt8,
 } from './util';
+import type { IDataType } from './util';
 
 export const MAX_HEAP = 16 * 1024;
 const WASM_FUNC_HASH_LENGTH = 4;
@@ -27,10 +31,7 @@ export type IHasher = {
    * @param outputType If outputType is "binary", it returns Uint8Array. Otherwise it
    *                   returns hexadecimal string
    */
-  digest: {
-    (outputType: 'binary'): Uint8Array;
-    (outputType?: 'hex'): string;
-  };
+  digest: <T extends 'binary' | 'hex' | undefined = undefined>(outputType?: T, digestParam?: number) => T extends 'binary' ? Uint8Array : string;
   /**
    * Save the current internal state of the hasher for later resumption with load().
    * Cannot be called before .init() or after .digest()
@@ -55,11 +56,32 @@ export type IHasher = {
   digestSize: number;
 }
 
+interface IWASMExports {
+  memory: {
+    buffer: ArrayBuffer
+  }
+  STATE_SIZE: number
+  Hash_SetMemorySize(size: number): void
+  Hash_GetBuffer(): number
+  Hash_Init(bits: number): void
+  Hash_Update(size: number): void
+  Hash_Calculate(size: number, initParam: number, digestParam: number): void
+  Hash_Final(padding: number): void
+  Hash_GetState(): number
+}
+
+interface IBinaryContents {
+  name: string
+  data: string
+  hash: string
+}
+
 const wasmModuleCache = new Map<string, Promise<WebAssembly.Module>>();
 
-export async function WASMInterface(binary: any, hashLength: number) {
-  let wasmInstance = null;
-  let memoryView: Uint8Array = null;
+export async function WASMInterface(binary: IBinaryContents, hashLength: number) {
+  let wasmInstance: WebAssembly.Instance;
+  let wasmExports: IWASMExports;
+  let memoryView: Uint8Array;
   let initialized = false;
 
   if (typeof WebAssembly === 'undefined') {
@@ -71,18 +93,18 @@ export async function WASMInterface(binary: any, hashLength: number) {
   };
 
   const getMemory = () => memoryView;
-  const getExports = () => wasmInstance.exports;
+  const getExports = <T extends Record<string, any>>() => wasmInstance.exports as IWASMExports & T;
 
   const setMemorySize = (totalSize: number) => {
-    wasmInstance.exports.Hash_SetMemorySize(totalSize);
-    const arrayOffset: number = wasmInstance.exports.Hash_GetBuffer();
-    const memoryBuffer = wasmInstance.exports.memory.buffer;
+    wasmExports.Hash_SetMemorySize(totalSize);
+    const arrayOffset: number = wasmExports.Hash_GetBuffer();
+    const memoryBuffer = wasmExports.memory.buffer;
     memoryView = new Uint8Array(memoryBuffer, arrayOffset, totalSize);
   };
 
   const getStateSize = () => {
-    const view = new DataView(wasmInstance.exports.memory.buffer);
-    const stateSize = view.getUint32(wasmInstance.exports.STATE_SIZE, true);
+    const view = new DataView(wasmExports.memory.buffer);
+    const stateSize = view.getUint32(wasmExports.STATE_SIZE, true);
     return stateSize;
   };
 
@@ -94,23 +116,25 @@ export async function WASMInterface(binary: any, hashLength: number) {
       wasmModuleCache.set(binary.name, promise);
     }
 
-    const module = await wasmModuleCache.get(binary.name);
-    wasmInstance = await WebAssembly.instantiate(module, {
+    const wasmModule = await wasmModuleCache.get(binary.name) as WebAssembly.Module;
+    const instance = await WebAssembly.instantiate(wasmModule, {
       // env: {
       //   emscripten_memcpy_big: (dest, src, num) => {
-      //     const memoryBuffer = wasmInstance.exports.memory.buffer;
+      //     const memoryBuffer = wasmExports.memory.buffer;
       //     const memView = new Uint8Array(memoryBuffer, 0);
       //     memView.set(memView.subarray(src, src + num), dest);
       //   },
       //   print_memory: (offset, len) => {
-      //     const memoryBuffer = wasmInstance.exports.memory.buffer;
+      //     const memoryBuffer = wasmExports.memory.buffer;
       //     const memView = new Uint8Array(memoryBuffer, 0);
       //     console.log('print_int32', memView.subarray(offset, offset + len));
       //   },
       // },
     });
+    wasmInstance = instance;
+    wasmExports = instance.exports as unknown as IWASMExports;
 
-    // wasmInstance.exports._start();
+    // wasmExports._start();
   });
 
   const setupInterface = async () => {
@@ -118,14 +142,14 @@ export async function WASMInterface(binary: any, hashLength: number) {
       await loadWASMPromise;
     }
 
-    const arrayOffset: number = wasmInstance.exports.Hash_GetBuffer();
-    const memoryBuffer = wasmInstance.exports.memory.buffer;
+    const arrayOffset: number = wasmExports.Hash_GetBuffer();
+    const memoryBuffer = wasmExports.memory.buffer;
     memoryView = new Uint8Array(memoryBuffer, arrayOffset, MAX_HEAP);
   };
 
-  const init = (bits: number = null) => {
+  const init = (bits = 0) => {
     initialized = true;
-    wasmInstance.exports.Hash_Init(bits);
+    wasmExports.Hash_Init(bits);
   };
 
   const updateUInt8Array = (data: Uint8Array): void => {
@@ -134,7 +158,7 @@ export async function WASMInterface(binary: any, hashLength: number) {
       const chunk = data.subarray(read, read + MAX_HEAP);
       read += chunk.length;
       memoryView.set(chunk);
-      wasmInstance.exports.Hash_Update(chunk.length);
+      wasmExports.Hash_Update(chunk.length);
     }
   };
 
@@ -148,13 +172,13 @@ export async function WASMInterface(binary: any, hashLength: number) {
 
   const digestChars = new Uint8Array(hashLength * 2);
 
-  const digest = (outputType: 'hex' | 'binary', padding: number = null): Uint8Array | string => {
+  const digest: IHasher['digest'] = (outputType, padding = 0): any => {
     if (!initialized) {
       throw new Error('digest() called before init()');
     }
     initialized = false;
 
-    wasmInstance.exports.Hash_Final(padding);
+    wasmExports.Hash_Final(padding);
 
     if (outputType === 'binary') {
       // the data is copied to allow GC of the original memory object
@@ -169,9 +193,9 @@ export async function WASMInterface(binary: any, hashLength: number) {
       throw new Error('save() can only be called after init() and before digest()');
     }
 
-    const stateOffset: number = wasmInstance.exports.Hash_GetState();
+    const stateOffset: number = wasmExports.Hash_GetState();
     const stateLength: number = getStateSize();
-    const memoryBuffer = wasmInstance.exports.memory.buffer;
+    const memoryBuffer = wasmExports.memory.buffer;
     const internalState = new Uint8Array(memoryBuffer, stateOffset, stateLength);
 
     // prefix is 4 bytes from SHA1 hash of the WASM binary
@@ -187,10 +211,10 @@ export async function WASMInterface(binary: any, hashLength: number) {
       throw new Error('load() expects an Uint8Array generated by save()');
     }
 
-    const stateOffset: number = wasmInstance.exports.Hash_GetState();
+    const stateOffset: number = wasmExports.Hash_GetState();
     const stateLength: number = getStateSize();
     const overallLength: number = WASM_FUNC_HASH_LENGTH + stateLength;
-    const memoryBuffer = wasmInstance.exports.memory.buffer;
+    const memoryBuffer = wasmExports.memory.buffer;
 
     if (state.length !== overallLength) {
       throw new Error(`Bad state length (expected ${overallLength} bytes, got ${state.length})`);
@@ -226,7 +250,7 @@ export async function WASMInterface(binary: any, hashLength: number) {
     case 'blake2b':
     case 'blake2s':
       // if there is a key at blake2 then cannot simplify
-      canSimplify = (data, initParam) => initParam <= 512 && isDataShort(data);
+      canSimplify = (data, initParam) => !(initParam && initParam > 512) && isDataShort(data);
       break;
 
     case 'blake3':
@@ -246,7 +270,9 @@ export async function WASMInterface(binary: any, hashLength: number) {
 
   // shorthand for (init + update + digest) for better performance
   const calculate = (
-    data: IDataType, initParam = null, digestParam = null,
+    data: IDataType,
+    initParam = 0,
+    digestParam = 0,
   ): string => {
     if (!canSimplify(data, initParam)) {
       init(initParam);
@@ -256,7 +282,7 @@ export async function WASMInterface(binary: any, hashLength: number) {
 
     const buffer = getUInt8Buffer(data);
     memoryView.set(buffer);
-    wasmInstance.exports.Hash_Calculate(buffer.length, initParam, digestParam);
+    wasmExports.Hash_Calculate(buffer.length, initParam, digestParam);
 
     return getDigestHex(digestChars, memoryView, hashLength);
   };

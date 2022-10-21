@@ -1,33 +1,57 @@
-import {
-  argon2d, argon2i, argon2id, argon2Verify,
-} from '../lib';
 /* global test, expect */
 
-const hash = async (
-  password, salt, parallelism, iterations, memorySize,
-  hashLength, outputType, hashType = null,
-) => {
-  let fn = null;
-  if (hashType === 'd') {
-    fn = argon2d;
-  } else if (hashType === 'id') {
-    fn = argon2id;
-  } else if (hashType === 'i') {
-    fn = argon2i;
+import {
+  argon2d,
+  argon2i,
+  argon2id,
+  argon2Verify,
+} from '../lib';
+
+async function hash(
+  password: string | Buffer,
+  salt: string | Buffer,
+  parallelism: number,
+  iterations: number,
+  memorySize: number,
+  hashLength: number,
+  outputType: 'binary' | 'hex' | 'encoded',
+  hashType: 'd' | 'id' | 'i' = 'i',
+): Promise<string> {
+  switch (hashType) {
+    case 'd':
+      return argon2d({
+        password,
+        salt,
+        parallelism,
+        iterations,
+        memorySize,
+        hashLength,
+        outputType,
+      });
+    case 'id':
+      return argon2id({
+        password,
+        salt,
+        parallelism,
+        iterations,
+        memorySize,
+        hashLength,
+        outputType,
+      });
+    default:
+      return argon2i({
+        password,
+        salt,
+        parallelism,
+        iterations,
+        memorySize,
+        hashLength,
+        outputType,
+      });
   }
+}
 
-  return fn({
-    password,
-    salt,
-    parallelism,
-    iterations,
-    memorySize,
-    hashLength,
-    outputType,
-  });
-};
-
-const hashMultiple = async (...params: Parameters<typeof hash>) => {
+const hashMultiple = async (...params: Parameters<typeof hash>): Promise<string[]> => {
   const parr = [
     [...params, 'i'],
     [...params, 'd'],
@@ -338,13 +362,14 @@ test('longer calculations', async () => {
 });
 
 test('Invalid parameters', async () => {
-  const functions = [argon2i, argon2d, argon2id];
+  type ITestFn = (options?: any) => Promise<string | Uint8Array>
+  const functions: ITestFn[] = [argon2i, argon2d, argon2id];
 
   // eslint-disable-next-line no-restricted-syntax
   for (const fn of functions) {
-    await expect(fn('' as any)).rejects.toThrow();
-    await expect(fn([] as any)).rejects.toThrow();
-    await expect((fn as any)()).rejects.toThrow();
+    await expect(fn('')).rejects.toThrow();
+    await expect(fn([])).rejects.toThrow();
+    await expect(fn()).rejects.toThrow();
     const options: Parameters<typeof argon2i>[0] = {
       password: 'p',
       salt: 'salt1234',
@@ -358,8 +383,8 @@ test('Invalid parameters', async () => {
 
     await expect(fn({ ...options, password: undefined })).rejects.toThrow();
     await expect(fn({ ...options, password: null })).rejects.toThrow();
-    await expect(fn({ ...options, password: 1 as any })).rejects.toThrow();
-    await expect(fn({ ...options, password: [] as any })).rejects.toThrow();
+    await expect(fn({ ...options, password: 1 })).rejects.toThrow();
+    await expect(fn({ ...options, password: [] })).rejects.toThrow();
     await expect(fn({ ...options, password: Buffer.from([]) })).rejects.toThrow();
 
     await expect(fn({ ...options, salt: undefined })).rejects.toThrow();
@@ -371,40 +396,42 @@ test('Invalid parameters', async () => {
     await expect(fn({ ...options, iterations: undefined })).rejects.toThrow();
     await expect(fn({ ...options, iterations: null })).rejects.toThrow();
     await expect(fn({ ...options, iterations: 0 })).rejects.toThrow();
-    await expect(fn({ ...options, iterations: '' as any })).rejects.toThrow();
-    await expect(fn({ ...options, iterations: '0' as any })).rejects.toThrow();
+    await expect(fn({ ...options, iterations: '' })).rejects.toThrow();
+    await expect(fn({ ...options, iterations: '0' })).rejects.toThrow();
 
     await expect(fn({ ...options, parallelism: undefined })).rejects.toThrow();
     await expect(fn({ ...options, parallelism: null })).rejects.toThrow();
     await expect(fn({ ...options, parallelism: 0 })).rejects.toThrow();
-    await expect(fn({ ...options, parallelism: '' as any })).rejects.toThrow();
-    await expect(fn({ ...options, parallelism: '0' as any })).rejects.toThrow();
+    await expect(fn({ ...options, parallelism: '' })).rejects.toThrow();
+    await expect(fn({ ...options, parallelism: '0' })).rejects.toThrow();
 
     await expect(fn({ ...options, hashLength: undefined })).rejects.toThrow();
     await expect(fn({ ...options, hashLength: null })).rejects.toThrow();
     await expect(fn({ ...options, hashLength: 3 })).rejects.toThrow();
-    await expect(fn({ ...options, hashLength: '' as any })).rejects.toThrow();
-    await expect(fn({ ...options, hashLength: '3' as any })).rejects.toThrow();
+    await expect(fn({ ...options, hashLength: '' })).rejects.toThrow();
+    await expect(fn({ ...options, hashLength: '3' })).rejects.toThrow();
 
     await expect(fn({ ...options, memorySize: undefined })).rejects.toThrow();
     await expect(fn({ ...options, memorySize: null })).rejects.toThrow();
     await expect(fn({ ...options, memorySize: 7 })).rejects.toThrow();
-    await expect(fn({ ...options, memorySize: '' as any })).rejects.toThrow();
-    await expect(fn({ ...options, memorySize: '7' as any })).rejects.toThrow();
+    await expect(fn({ ...options, memorySize: '' })).rejects.toThrow();
+    await expect(fn({ ...options, memorySize: '7' })).rejects.toThrow();
     await expect(fn({ ...options, parallelism: 2, memorySize: 15 })).rejects.toThrow();
     await expect(fn({ ...options, parallelism: 5, memorySize: 39 })).rejects.toThrow();
 
     await expect(fn({ ...options, outputType: null })).rejects.toThrow();
-    await expect(fn({ ...options, outputType: '' as any })).rejects.toThrow();
-    await expect(fn({ ...options, outputType: 'x' as any })).rejects.toThrow();
-    await expect(fn({ ...options, outputType: 'idx' as any })).rejects.toThrow();
+    await expect(fn({ ...options, outputType: '' })).rejects.toThrow();
+    await expect(fn({ ...options, outputType: 'x' })).rejects.toThrow();
+    await expect(fn({ ...options, outputType: 'idx' })).rejects.toThrow();
   }
 });
 
 test('Invalid verify parameters', async () => {
-  await expect(argon2Verify('' as any)).rejects.toThrow();
-  await expect(argon2Verify([] as any)).rejects.toThrow();
-  await expect((argon2Verify as any)()).rejects.toThrow();
+  type TestArgon2VerifyFn = (options?: unknown) => Promise<boolean>
+  const testArgon2Verify = argon2Verify as unknown as TestArgon2VerifyFn;
+  await expect(testArgon2Verify('')).rejects.toThrow();
+  await expect(testArgon2Verify([])).rejects.toThrow();
+  await expect(testArgon2Verify()).rejects.toThrow();
   const options: Parameters<typeof argon2Verify>[0] = {
     password: 'qwe',
     hash: '$argon2i$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd',
@@ -412,15 +439,15 @@ test('Invalid verify parameters', async () => {
 
   await expect(argon2Verify(options)).resolves.not.toThrow();
 
-  await expect(argon2Verify({ ...options, password: undefined })).rejects.toThrow();
-  await expect(argon2Verify({ ...options, password: null })).rejects.toThrow();
-  await expect(argon2Verify({ ...options, password: 1 as any })).rejects.toThrow();
-  await expect(argon2Verify({ ...options, password: [] as any })).rejects.toThrow();
-  await expect(argon2Verify({ ...options, password: Buffer.from([]) })).rejects.toThrow();
-  await expect(argon2Verify({ ...options, password: '' })).rejects.toThrow();
+  await expect(testArgon2Verify({ ...options, password: undefined })).rejects.toThrow();
+  await expect(testArgon2Verify({ ...options, password: null })).rejects.toThrow();
+  await expect(testArgon2Verify({ ...options, password: 1 })).rejects.toThrow();
+  await expect(testArgon2Verify({ ...options, password: [] })).rejects.toThrow();
+  await expect(testArgon2Verify({ ...options, password: Buffer.from([]) })).rejects.toThrow();
+  await expect(testArgon2Verify({ ...options, password: '' })).rejects.toThrow();
 
-  const testHash = async (hashStr: string) => {
-    await expect(argon2Verify({ ...options, hash: hashStr })).rejects.toThrow();
+  const testHash = async (hashStr: any): Promise<void> => {
+    await expect(testArgon2Verify({ ...options, hash: hashStr })).rejects.toThrow();
   };
 
   await testHash(undefined);

@@ -1,8 +1,12 @@
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import { fileURLToPath } from 'node:url';
 
-const dir = path.resolve(__dirname, '..', 'wasm');
+const myFilename = fileURLToPath(import.meta.url);
+const myDirname = path.dirname(myFilename);
+
+const dir = path.resolve(myDirname, '..', 'wasm');
 const files = fs.readdirSync(dir).filter((file) => file.endsWith('.wasm'));
 
 files.forEach((file) => {

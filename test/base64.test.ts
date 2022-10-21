@@ -1,6 +1,8 @@
 /* global test, expect */
 import {
-  encodeBase64, decodeBase64, getDecodeBase64Length,
+  encodeBase64,
+  decodeBase64,
+  getDecodeBase64Length,
 } from '../lib/util';
 
 test('encodes basic base64 strings', () => {

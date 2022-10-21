@@ -1,8 +1,21 @@
 /* eslint-disable no-await-in-loop */
 /* global test, expect */
 import {
-  adler32, blake2b, blake3, crc32, md4, md5, sha1, sha256, sha384, sha3,
-  xxhash32, xxhash64, createMD4, keccak, ripemd160,
+  adler32,
+  blake2b,
+  blake3,
+  crc32,
+  md4,
+  md5,
+  sha1,
+  sha256,
+  sha384,
+  sha3,
+  xxhash32,
+  xxhash64,
+  createMD4,
+  keccak,
+  ripemd160,
 } from '../lib';
 import { hexStringEqualsUInt8 } from '../lib/util';
 import { MAX_HEAP } from '../lib/WASMInterface';

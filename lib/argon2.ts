@@ -2,10 +2,15 @@ import {
   decodeBase64,
   encodeBase64,
   getDecodeBase64Length,
-  getDigestHex, getUInt8Buffer, IDataType, writeHexToUInt8,
+  getDigestHex,
+  getUInt8Buffer,
+  writeHexToUInt8,
 } from './util';
+import type { IDataType } from './util';
+
 import { createBLAKE2b } from './blake2b';
-import { WASMInterface, IHasher } from './WASMInterface';
+import { WASMInterface } from './WASMInterface';
+import type { IHasher } from './WASMInterface';
 import wasmJson from '../wasm/argon2.wasm.json';
 
 export interface IArgon2Options {
@@ -43,7 +48,7 @@ interface IArgon2OptionsExtended extends IArgon2Options {
   hashType: 'i' | 'd' | 'id';
 }
 
-function encodeResult(salt: Uint8Array, options: IArgon2OptionsExtended, res: Uint8Array): string {
+function encodeResult(salt: Uint8Array, options: IArgon2OptionsExtended, res: Uint8Array) {
   const parameters = [
     `m=${options.memorySize}`,
     `t=${options.iterations}`,
@@ -59,7 +64,7 @@ function int32LE(x: number): Uint8Array {
   return new Uint8Array(uint32View.buffer);
 }
 
-async function hashFunc(blake512: IHasher, buf: Uint8Array, len: number): Promise<Uint8Array> {
+async function hashFunc(blake512: IHasher, buf: Uint8Array, len: number) {
   if (len <= 64) {
     const blake = await createBLAKE2b(len * 8);
     blake.update(int32LE(len));
@@ -100,7 +105,7 @@ async function hashFunc(blake512: IHasher, buf: Uint8Array, len: number): Promis
   return ret;
 }
 
-function getHashType(type: IArgon2OptionsExtended['hashType']): number {
+function getHashType(type: IArgon2OptionsExtended['hashType']) {
   switch (type) {
     case 'd':
       return 0;
@@ -111,7 +116,7 @@ function getHashType(type: IArgon2OptionsExtended['hashType']): number {
   }
 }
 
-async function argon2Internal(options: IArgon2OptionsExtended): Promise<string | Uint8Array> {
+async function argon2Internal(options: IArgon2OptionsExtended) {
   const { parallelism, iterations, hashLength } = options;
   const password = getUInt8Buffer(options.password);
   const salt = getUInt8Buffer(options.salt);
@@ -295,7 +300,7 @@ export interface Argon2VerifyOptions {
   hash: string;
 }
 
-const getHashParameters = (password: IDataType, encoded: string): IArgon2OptionsExtended => {
+const getHashParameters = (password: IDataType, encoded: string) => {
   const regex = /^\$argon2(id|i|d)\$v=([0-9]+)\$((?:[mtp]=[0-9]+,){2}[mtp]=[0-9]+)\$([A-Za-z0-9+/]+)\$([A-Za-z0-9+/]+)$/;
   const match = encoded.match(regex);
   if (!match) {
@@ -308,10 +313,13 @@ const getHashParameters = (password: IDataType, encoded: string): IArgon2Options
   }
 
   const parsedParameters: Partial<IArgon2Options> = {};
-  const paramMap = { m: 'memorySize', p: 'parallelism', t: 'iterations' };
+  type ParamValue = 'memorySize' | 'parallelism' | 'iterations';
+  type ParamMap = Record<'m' | 'p' | 't', ParamValue>
+  const paramMap: ParamMap = { m: 'memorySize', p: 'parallelism', t: 'iterations' };
   parameters.split(',').forEach((x) => {
     const [n, v] = x.split('=');
-    parsedParameters[paramMap[n]] = parseInt(v, 10);
+    const param = paramMap[n as keyof ParamMap];
+    parsedParameters[param] = parseInt(v, 10);
   });
 
   return {
@@ -338,7 +346,7 @@ const validateVerifyOptions = (options: Argon2VerifyOptions) => {
  * Verifies password using the argon2 password-hashing function
  * @returns True if the encoded hash matches the password
  */
-export async function argon2Verify(options: Argon2VerifyOptions): Promise<boolean> {
+export async function argon2Verify(options: Argon2VerifyOptions) {
   validateVerifyOptions(options);
 
   const params = getHashParameters(options.password, options.hash);

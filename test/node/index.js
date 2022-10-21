@@ -1,6 +1,8 @@
-const { md5 } = require('../../dist/index.umd');
+/* eslint "@typescript-eslint/explicit-function-return-type": "off" */
+/* eslint-disable no-console */
+import { md5 } from '../../dist/index';
 
-async function run () {
+async function run() {
   console.log('Result: ', await md5('a'));
 }
 

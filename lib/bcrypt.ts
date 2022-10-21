@@ -1,6 +1,9 @@
 import {
-  getDigestHex, getUInt8Buffer, IDataType, intArrayToString,
+  getDigestHex,
+  getUInt8Buffer,
+  intArrayToString,
 } from './util';
+import type { IDataType } from './util';
 import { WASMInterface } from './WASMInterface';
 import wasmJson from '../wasm/bcrypt.wasm.json';
 
@@ -48,7 +51,7 @@ async function bcryptInternal(options: BcryptOptions): Promise<string | Uint8Arr
   return memory.slice(0, 24);
 }
 
-const validateOptions = (options: BcryptOptions) => {
+const validateOptions = (options: BcryptOptions): void => {
   if (!options || typeof options !== 'object') {
     throw new Error('Invalid options parameter. It requires an object.');
   }
@@ -125,7 +128,7 @@ const validateHashCharacters = (hash: string): boolean => {
   return true;
 };
 
-const validateVerifyOptions = (options: BcryptVerifyOptions) => {
+const validateVerifyOptions = (options: BcryptVerifyOptions): void => {
   if (!options || typeof options !== 'object') {
     throw new Error('Invalid options parameter. It requires an object.');
   }

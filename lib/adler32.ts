@@ -1,11 +1,12 @@
-import { WASMInterface, IWASMInterface, IHasher } from './WASMInterface';
+import { WASMInterface } from './WASMInterface';
+import type { IWASMInterface, IHasher } from './WASMInterface';
 import Mutex from './mutex';
 import wasmJson from '../wasm/adler32.wasm.json';
 import lockedCreate from './lockedCreate';
-import { IDataType } from './util';
+import type { IDataType } from './util';
 
 const mutex = new Mutex();
-let wasmCache: IWASMInterface = null;
+let wasmCache: IWASMInterface;
 
 /**
  * Calculates Adler-32 hash. The resulting 32-bit hash is stored in
@@ -14,21 +15,10 @@ let wasmCache: IWASMInterface = null;
  * @param data Input data (string, Buffer or TypedArray)
  * @returns Computed hash as a hexadecimal string
  */
-export function adler32(data: IDataType): Promise<string> {
-  if (wasmCache === null) {
-    return lockedCreate(mutex, wasmJson, 4)
-      .then((wasm) => {
-        wasmCache = wasm;
-        return wasmCache.calculate(data);
-      });
-  }
+export async function adler32(data: IDataType): Promise<string> {
+  if (!wasmCache) wasmCache = await lockedCreate(mutex, wasmJson, 4);
 
-  try {
-    const hash = wasmCache.calculate(data);
-    return Promise.resolve(hash);
-  } catch (err) {
-    return Promise.reject(err);
-  }
+  return wasmCache.calculate(data);
 }
 
 /**
@@ -40,7 +30,7 @@ export function createAdler32(): Promise<IHasher> {
     const obj: IHasher = {
       init: () => { wasm.init(); return obj; },
       update: (data) => { wasm.update(data); return obj; },
-      digest: (outputType) => wasm.digest(outputType) as any,
+      digest: (outputType) => wasm.digest(outputType),
       save: () => wasm.save(),
       load: (data) => { wasm.load(data); return obj; },
       blockSize: 4,

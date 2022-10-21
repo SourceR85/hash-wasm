@@ -1,17 +1,8 @@
 /* eslint-disable import/prefer-default-export */
 /* eslint-disable no-bitwise */
 
-function getGlobal() {
-  if (typeof globalThis !== 'undefined') return globalThis;
-  // eslint-disable-next-line no-restricted-globals
-  if (typeof self !== 'undefined') return self;
-  if (typeof window !== 'undefined') return window;
-  return global;
-}
-
-const globalObject = getGlobal();
-const nodeBuffer = globalObject.Buffer ?? null;
-const textEncoder = globalObject.TextEncoder ? new globalObject.TextEncoder() : null;
+const nodeBuffer = globalThis.Buffer ?? null;
+const textEncoder = new TextEncoder();
 
 export type ITypedArray = Uint8Array | Uint16Array | Uint32Array;
 export type IDataType = string | Buffer | ITypedArray;
@@ -21,14 +12,11 @@ export function intArrayToString(arr: Uint8Array, len: number): string {
 }
 
 function hexCharCodesToInt(a: number, b: number): number {
-  return (
-    ((a & 0xF) + ((a >> 6) | ((a >> 3) & 0x8))) << 4
-  ) | (
-    (b & 0xF) + ((b >> 6) | ((b >> 3) & 0x8))
-  );
+  return (((a & 0xF) + ((a >> 6) | ((a >> 3) & 0x8))) << 4)
+    | ((b & 0xF) + ((b >> 6) | ((b >> 3) & 0x8)));
 }
 
-export function writeHexToUInt8(buf: Uint8Array, str: string) {
+export function writeHexToUInt8(buf: Uint8Array, str: string): void {
   const size = str.length >> 1;
   for (let i = 0; i < size; i++) {
     const index = i << 1;
@@ -62,7 +50,7 @@ export function getDigestHex(tmpBuffer: Uint8Array, input: Uint8Array, hashLengt
   }
   /* eslint-enable no-plusplus */
 
-  return String.fromCharCode.apply(null, tmpBuffer);
+  return String.fromCharCode(...tmpBuffer);
 }
 
 export const getUInt8Buffer = nodeBuffer !== null

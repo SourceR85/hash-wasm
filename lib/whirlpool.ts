@@ -1,49 +1,39 @@
-import { WASMInterface, IWASMInterface, IHasher } from './WASMInterface';
+import { WASMInterface } from './WASMInterface';
+import type { IWASMInterface, IHasher } from './WASMInterface';
 import Mutex from './mutex';
 import wasmJson from '../wasm/whirlpool.wasm.json';
 import lockedCreate from './lockedCreate';
-import { IDataType } from './util';
+import type { IDataType } from './util';
 
 const mutex = new Mutex();
-let wasmCache: IWASMInterface = null;
+let wasmCache: IWASMInterface;
 
 /**
  * Calculates Whirlpool hash
  * @param data Input data (string, Buffer or TypedArray)
  * @returns Computed hash as a hexadecimal string
  */
-export function whirlpool(data: IDataType): Promise<string> {
-  if (wasmCache === null) {
-    return lockedCreate(mutex, wasmJson, 64)
-      .then((wasm) => {
-        wasmCache = wasm;
-        return wasmCache.calculate(data);
-      });
-  }
+export async function whirlpool(data: IDataType) {
+  if (!wasmCache) wasmCache = await lockedCreate(mutex, wasmJson, 64);
 
-  try {
-    const hash = wasmCache.calculate(data);
-    return Promise.resolve(hash);
-  } catch (err) {
-    return Promise.reject(err);
-  }
+  return wasmCache.calculate(data);
 }
 
 /**
  * Creates a new Whirlpool hash instance
  */
-export function createWhirlpool(): Promise<IHasher> {
-  return WASMInterface(wasmJson, 64).then((wasm) => {
-    wasm.init();
-    const obj: IHasher = {
-      init: () => { wasm.init(); return obj; },
-      update: (data) => { wasm.update(data); return obj; },
-      digest: (outputType) => wasm.digest(outputType) as any,
-      save: () => wasm.save(),
-      load: (data) => { wasm.load(data); return obj; },
-      blockSize: 64,
-      digestSize: 64,
-    };
-    return obj;
-  });
+export async function createWhirlpool() {
+  const wasm = await WASMInterface(wasmJson, 64);
+  wasm.init();
+
+  const obj: IHasher = {
+    init: () => { wasm.init(); return obj; },
+    update: (data) => { wasm.update(data); return obj; },
+    digest: (outputType) => wasm.digest(outputType),
+    save: () => wasm.save(),
+    load: (data) => { wasm.load(data); return obj; },
+    blockSize: 64,
+    digestSize: 64,
+  };
+  return obj;
 }

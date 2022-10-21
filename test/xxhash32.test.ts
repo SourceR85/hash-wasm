@@ -1,12 +1,10 @@
 import fs from 'fs';
 import { xxhash32 as origXXHash32, createXXHash32 } from '../lib';
-import { IDataType } from '../lib/util';
+import type { IDataType } from '../lib/util';
 import { getVariableLengthChunks } from './util';
 /* global test, expect */
 
-const xxhash32 = async (
-  data: IDataType,
-) => origXXHash32(data, 0x6789ABCD);
+const xxhash32 = async (data: IDataType) => origXXHash32(data, 0x6789ABCD);
 
 test('simple strings with 0 seed', async () => {
   expect(await origXXHash32('')).toBe('02cc5d05');

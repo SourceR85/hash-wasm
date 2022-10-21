@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable no-restricted-globals */
 /* eslint-disable no-await-in-loop */
 /* global test, expect */
+export { };
 
 beforeEach(() => {
   jest.resetModules();
@@ -10,6 +12,7 @@ test('Throws when WebAssembly is unavailable', async () => {
   const { md5 } = jest.requireActual('../lib');
 
   const WASM = globalThis.WebAssembly;
+  // @ts-ignore
   globalThis.WebAssembly = undefined;
 
   await expect(() => md5('a')).rejects.toThrow();
@@ -20,7 +23,7 @@ const NodeBuffer = (globalThis as any).Buffer;
 
 class TextEncoderMock {
   // eslint-disable-next-line class-methods-use-this
-  encode(str) {
+  encode(str: string): Uint8Array {
     const buf = NodeBuffer.from(str);
     return new Uint8Array(buf.buffer, buf.byteOffset, buf.length);
   }
@@ -54,6 +57,7 @@ test('Use global self', async () => {
 
 test('Delete global self', async () => {
   const global = globalThis;
+  // @ts-ignore
   delete globalThis.self;
   (globalThis as any) = undefined;
 
@@ -76,6 +80,7 @@ test('Use global window', async () => {
 
 test('Delete global self + window', async () => {
   const global = globalThis;
+  // @ts-ignore
   delete globalThis.window;
   (globalThis as any) = undefined;
 

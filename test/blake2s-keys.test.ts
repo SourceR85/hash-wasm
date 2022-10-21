@@ -50,13 +50,16 @@ test('long syntax', async () => {
 });
 
 test('Invalid keys throw', async () => {
-  const invalidKeys = [0, 1, Number(1), {}, []];
-
-  // eslint-disable-next-line no-restricted-syntax
-  for (const key of invalidKeys) {
-    await expect(() => blake2s('a', 256, key as any)).toThrow();
-    await expect(() => createBLAKE2s(256, key as any)).toThrow();
-  }
+  await expect(blake2s('a', 256, 0 as any)).rejects.toThrow();
+  await expect(blake2s('a', 256, 1 as any)).rejects.toThrow();
+  await expect(blake2s('a', 256, Number(1) as any)).rejects.toThrow();
+  await expect(blake2s('a', 256, {} as any)).rejects.toThrow();
+  await expect(blake2s('a', 256, [] as any)).rejects.toThrow();
+  await expect(createBLAKE2s(256, 0 as any)).rejects.toThrow();
+  await expect(createBLAKE2s(256, 1 as any)).rejects.toThrow();
+  await expect(createBLAKE2s(256, Number(1) as any)).rejects.toThrow();
+  await expect(createBLAKE2s(256, {} as any)).rejects.toThrow();
+  await expect(createBLAKE2s(256, [] as any)).rejects.toThrow();
 });
 
 test('Too long keys reject', async () => {

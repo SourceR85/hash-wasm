@@ -1,7 +1,8 @@
 /* eslint-disable no-bitwise */
-import { IHasher } from './WASMInterface';
+import type { IHasher } from './WASMInterface';
 import { createHMAC } from './hmac';
-import { getDigestHex, getUInt8Buffer, IDataType } from './util';
+import { getDigestHex, getUInt8Buffer } from './util';
+import type { IDataType } from './util';
 
 export interface IPBKDF2Options {
   /**
@@ -31,24 +32,25 @@ export interface IPBKDF2Options {
 }
 
 async function calculatePBKDF2(
-  digest: IHasher, salt: IDataType, iterations: number,
-  hashLength: number, outputType?: 'hex' | 'binary',
+  digest: IHasher,
+  salt: IDataType,
+  iterations: number,
+  hashLength: number,
+  outputType?: 'hex' | 'binary',
 ): Promise<Uint8Array | string> {
   const DK = new Uint8Array(hashLength);
   const block1 = new Uint8Array(salt.length + 4);
   const block1View = new DataView(block1.buffer);
-  const saltBuffer = getUInt8Buffer(salt);
-  const saltUIntBuffer = new Uint8Array(
-    saltBuffer.buffer, saltBuffer.byteOffset, saltBuffer.length,
-  );
+  const { buffer, byteOffset, length } = getUInt8Buffer(salt);
+  const saltUIntBuffer = new Uint8Array(buffer, byteOffset, length);
   block1.set(saltUIntBuffer);
 
   let destPos = 0;
   const hLen = digest.digestSize;
   const l = Math.ceil(hashLength / hLen);
 
-  let T: Uint8Array = null;
-  let U: Uint8Array = null;
+  let T: Uint8Array;
+  let U: Uint8Array;
 
   for (let i = 1; i <= l; i++) {
     block1View.setUint32(salt.length, i);

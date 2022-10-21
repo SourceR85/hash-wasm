@@ -1,8 +1,9 @@
 /* eslint-disable no-bitwise */
-import { IHasher } from './WASMInterface';
-import { getUInt8Buffer, IDataType } from './util';
+import type { IHasher } from './WASMInterface';
+import { getUInt8Buffer } from './util';
+import type { IDataType } from './util';
 
-function calculateKeyBuffer(hasher: IHasher, key: IDataType): Uint8Array {
+function calculateKeyBuffer(hasher: IHasher, key: IDataType) {
   const { blockSize } = hasher;
 
   const buf = getUInt8Buffer(key);
@@ -17,7 +18,7 @@ function calculateKeyBuffer(hasher: IHasher, key: IDataType): Uint8Array {
   return new Uint8Array(buf.buffer, buf.byteOffset, buf.length);
 }
 
-function calculateHmac(hasher: IHasher, key: IDataType): IHasher {
+function calculateHmac(hasher: IHasher, key: IDataType) {
   hasher.init();
 
   const { blockSize } = hasher;
@@ -46,13 +47,13 @@ function calculateHmac(hasher: IHasher, key: IDataType): IHasher {
       hasher.update(data);
       return obj;
     },
-    digest: ((outputType) => {
+    digest: (outputType) => {
       const uintArr = hasher.digest('binary');
       hasher.init();
       hasher.update(opad);
       hasher.update(uintArr);
       return hasher.digest(outputType);
-    }) as any,
+    },
     save: () => {
       throw new Error('save() not supported');
     },
@@ -71,10 +72,10 @@ function calculateHmac(hasher: IHasher, key: IDataType): IHasher {
  * @param hash Hash algorithm to use. It has to be the return value of a function like createSHA1()
  * @param key Key (string, Buffer or TypedArray)
  */
-export function createHMAC(hash: Promise<IHasher>, key: IDataType): Promise<IHasher> {
+export async function createHMAC(hash: Promise<IHasher>, key: IDataType) {
   if (!hash || !hash.then) {
     throw new Error('Invalid hash function is provided! Usage: createHMAC(createMD5(), "key").');
   }
 
-  return hash.then((hasher) => calculateHmac(hasher, key));
+  return calculateHmac(await hash, key);
 }
