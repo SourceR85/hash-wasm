@@ -13,7 +13,7 @@ let wasmCache: IWASMInterface;
  * @param data Input data (string, Buffer or TypedArray)
  * @returns Computed hash as a hexadecimal string
  */
-export async function crc32(data: IDataType) {
+export async function crc32(data: IDataType): Promise<string> {
   if (!wasmCache) wasmCache = await lockedCreate(mutex, wasmJson, 4);
 
   return wasmCache.calculate(data, 0xEDB88320);
@@ -22,7 +22,7 @@ export async function crc32(data: IDataType) {
 /**
  * Creates a new CRC-32 hash instance
  */
-export async function createCRC32() {
+export async function createCRC32(): Promise<IHasher> {
   const wasm = await WASMInterface(wasmJson, 4);
   wasm.init(0xEDB88320);
 

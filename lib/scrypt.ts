@@ -36,7 +36,7 @@ export interface ScryptOptions {
   outputType?: 'hex' | 'binary';
 }
 
-async function scryptInternal(options: ScryptOptions) {
+async function scryptInternal(options: ScryptOptions): Promise<string | Uint8Array> {
   const {
     costFactor, blockSize, parallelism, hashLength,
   } = options;
@@ -85,9 +85,9 @@ async function scryptInternal(options: ScryptOptions) {
 }
 
 // eslint-disable-next-line no-bitwise
-const isPowerOfTwo = (v: number) => v > 0 && !(v & (v - 1));
+const isPowerOfTwo = (v: number): boolean => v > 0 && !(v & (v - 1));
 
-const validateOptions = (options: ScryptOptions) => {
+const validateOptions = (options: ScryptOptions): void => {
   if (!options || typeof options !== 'object') {
     throw new Error('Invalid options parameter. It requires an object.');
   }

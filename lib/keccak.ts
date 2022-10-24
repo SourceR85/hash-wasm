@@ -9,7 +9,7 @@ type IValidBits = 224 | 256 | 384 | 512;
 const mutex = new Mutex();
 let wasmCache: IWASMInterface;
 
-function validateBits(bits: IValidBits) {
+function validateBits(bits: IValidBits): void {
   if (![224, 256, 384, 512].includes(bits)) {
     throw new Error('Invalid variant! Valid values: 224, 256, 384, 512');
   }
@@ -21,7 +21,7 @@ function validateBits(bits: IValidBits) {
  * @param bits Number of output bits. Valid values: 224, 256, 384, 512
  * @returns Computed hash as a hexadecimal string
  */
-export async function keccak(data: IDataType, bits: IValidBits = 512) {
+export async function keccak(data: IDataType, bits: IValidBits = 512): Promise<string> {
   validateBits(bits);
 
   const hashLength = bits / 8;
@@ -37,7 +37,7 @@ export async function keccak(data: IDataType, bits: IValidBits = 512) {
  * Creates a new Keccak hash instance
  * @param bits Number of output bits. Valid values: 224, 256, 384, 512
  */
-export async function createKeccak(bits: IValidBits = 512) {
+export async function createKeccak(bits: IValidBits = 512): Promise<IHasher> {
   validateBits(bits);
 
   const outputSize = bits / 8;

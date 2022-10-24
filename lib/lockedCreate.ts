@@ -4,7 +4,11 @@ import type { IWASMInterface } from './WASMInterface';
 
 export default async function lockedCreate(
   mutex: Mutex,
-  binary: any,
+  binary: {
+    name: string
+    data: string
+    hash: string
+  },
   hashLength: number,
 ): Promise<IWASMInterface> {
   const unlock = await mutex.lock();

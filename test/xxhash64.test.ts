@@ -4,7 +4,9 @@ import type { IDataType } from '../lib/util';
 import { getVariableLengthChunks } from './util';
 /* global test, expect */
 
-const xxhash64 = async (data: IDataType) => origXXHash64(data, 0x76543210, 0xFEDCBA98);
+const xxhash64 = async (
+  data: IDataType,
+): Promise<string> => origXXHash64(data, 0x76543210, 0xFEDCBA98);
 
 test('simple strings with 0 seed', async () => {
   expect(await origXXHash64('')).toBe('ef46db3751d8e999');
@@ -110,7 +112,7 @@ test('chunked', async () => {
 
 test('chunked increasing length', async () => {
   const hash = await createXXHash64(0x76543210, 0xFEDCBA98);
-  const test = async (maxLen: number) => {
+  const test = async (maxLen: number): Promise<void> => {
     const chunks = getVariableLengthChunks(maxLen);
     const flatchunks = chunks.reduce((acc, val) => acc.concat(val), []);
     const hashRef = await xxhash64(new Uint8Array(flatchunks));

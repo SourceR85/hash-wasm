@@ -19,22 +19,9 @@ test('Throws when WebAssembly is unavailable', async () => {
   globalThis.WebAssembly = WASM;
 });
 
-const NodeBuffer = (globalThis as any).Buffer;
-
-class TextEncoderMock {
-  // eslint-disable-next-line class-methods-use-this
-  encode(str: string): Uint8Array {
-    const buf = NodeBuffer.from(str);
-    return new Uint8Array(buf.buffer, buf.byteOffset, buf.length);
-  }
-}
-
 test('Simulate browsers', async () => {
   const global = globalThis;
-  ((globalThis as any).TextEncoder as any) = TextEncoderMock;
-  ((globalThis as any).Buffer as any) = undefined;
   delete (globalThis as any).Buffer;
-  (globalThis as any) = undefined;
 
   const { md5 } = jest.requireActual('../lib');
   expect(await md5('a')).toBe('0cc175b9c0f1b6a831c399e269772661');
@@ -47,7 +34,6 @@ test('Simulate browsers', async () => {
 test('Use global self', async () => {
   const global = globalThis;
   (globalThis as any).self = global;
-  (globalThis as any) = undefined;
 
   const { md5 } = jest.requireActual('../lib');
   expect(await md5('a')).toBe('0cc175b9c0f1b6a831c399e269772661');
@@ -59,7 +45,6 @@ test('Delete global self', async () => {
   const global = globalThis;
   // @ts-ignore
   delete globalThis.self;
-  (globalThis as any) = undefined;
 
   const { md5 } = jest.requireActual('../lib');
   expect(await md5('a')).toBe('0cc175b9c0f1b6a831c399e269772661');
@@ -70,7 +55,6 @@ test('Delete global self', async () => {
 test('Use global window', async () => {
   const global = globalThis;
   (globalThis as any).window = global;
-  (globalThis as any) = undefined;
 
   const { md5 } = jest.requireActual('../lib');
   expect(await md5('a')).toBe('0cc175b9c0f1b6a831c399e269772661');
@@ -82,7 +66,6 @@ test('Delete global self + window', async () => {
   const global = globalThis;
   // @ts-ignore
   delete globalThis.window;
-  (globalThis as any) = undefined;
 
   const { md5 } = jest.requireActual('../lib');
   expect(await md5('a')).toBe('0cc175b9c0f1b6a831c399e269772661');

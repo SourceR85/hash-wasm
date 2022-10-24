@@ -13,7 +13,7 @@ let wasmCache: IWASMInterface;
  * @param data Input data (string, Buffer or TypedArray)
  * @returns Computed hash as a hexadecimal string
  */
-export async function whirlpool(data: IDataType) {
+export async function whirlpool(data: IDataType): Promise<string> {
   if (!wasmCache) wasmCache = await lockedCreate(mutex, wasmJson, 64);
 
   return wasmCache.calculate(data);
@@ -22,7 +22,7 @@ export async function whirlpool(data: IDataType) {
 /**
  * Creates a new Whirlpool hash instance
  */
-export async function createWhirlpool() {
+export async function createWhirlpool(): Promise<IHasher> {
   const wasm = await WASMInterface(wasmJson, 64);
   wasm.init();
 

@@ -3,7 +3,7 @@ import type { IHasher } from './WASMInterface';
 import { getUInt8Buffer } from './util';
 import type { IDataType } from './util';
 
-function calculateKeyBuffer(hasher: IHasher, key: IDataType) {
+function calculateKeyBuffer(hasher: IHasher, key: IDataType): Uint8Array {
   const { blockSize } = hasher;
 
   const buf = getUInt8Buffer(key);
@@ -18,7 +18,7 @@ function calculateKeyBuffer(hasher: IHasher, key: IDataType) {
   return new Uint8Array(buf.buffer, buf.byteOffset, buf.length);
 }
 
-function calculateHmac(hasher: IHasher, key: IDataType) {
+function calculateHmac(hasher: IHasher, key: IDataType): IHasher {
   hasher.init();
 
   const { blockSize } = hasher;
@@ -72,7 +72,7 @@ function calculateHmac(hasher: IHasher, key: IDataType) {
  * @param hash Hash algorithm to use. It has to be the return value of a function like createSHA1()
  * @param key Key (string, Buffer or TypedArray)
  */
-export async function createHMAC(hash: Promise<IHasher>, key: IDataType) {
+export async function createHMAC(hash: Promise<IHasher>, key: IDataType): Promise<IHasher> {
   if (!hash || !hash.then) {
     throw new Error('Invalid hash function is provided! Usage: createHMAC(createMD5(), "key").');
   }

@@ -24,18 +24,18 @@ export async function adler32(data: IDataType): Promise<string> {
 /**
  * Creates a new Adler-32 hash instance
  */
-export function createAdler32(): Promise<IHasher> {
-  return WASMInterface(wasmJson, 4).then((wasm) => {
-    wasm.init();
-    const obj: IHasher = {
-      init: () => { wasm.init(); return obj; },
-      update: (data) => { wasm.update(data); return obj; },
-      digest: (outputType) => wasm.digest(outputType),
-      save: () => wasm.save(),
-      load: (data) => { wasm.load(data); return obj; },
-      blockSize: 4,
-      digestSize: 4,
-    };
-    return obj;
-  });
+export async function createAdler32(): Promise<IHasher> {
+  const wasm = await WASMInterface(wasmJson, 4);
+  wasm.init();
+
+  const obj: IHasher = {
+    init: () => { wasm.init(); return obj; },
+    update: (data) => { wasm.update(data); return obj; },
+    digest: (outputType) => wasm.digest(outputType),
+    save: () => wasm.save(),
+    load: (data) => { wasm.load(data); return obj; },
+    blockSize: 4,
+    digestSize: 4,
+  };
+  return obj;
 }

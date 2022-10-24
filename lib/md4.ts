@@ -13,7 +13,7 @@ let wasmCache: IWASMInterface;
  * @param data Input data (string, Buffer or TypedArray)
  * @returns Computed hash as a hexadecimal string
  */
-export async function md4(data: IDataType) {
+export async function md4(data: IDataType): Promise<string> {
   if (!wasmCache) wasmCache = await lockedCreate(mutex, wasmJson, 16);
 
   return wasmCache.calculate(data);
@@ -22,7 +22,7 @@ export async function md4(data: IDataType) {
 /**
  * Creates a new MD4 hash instance
  */
-export async function createMD4() {
+export async function createMD4(): Promise<IHasher> {
   const wasm = await WASMInterface(wasmJson, 16);
   wasm.init();
 

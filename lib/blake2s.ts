@@ -48,6 +48,10 @@ export async function blake2s(
       throw new Error('Max key length is 32 bytes');
     }
     initParam = getInitParam(bits, keyBuffer.length);
+
+    if (initParam > 512) {
+      wasmCache.writeMemory(keyBuffer);
+    }
   }
 
   return wasmCache.calculate(data, initParam);

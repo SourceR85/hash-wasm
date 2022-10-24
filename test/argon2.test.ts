@@ -359,7 +359,7 @@ test('longer calculations', async () => {
     '67f09ac991e535f9a99f4d6c4ac80f32',
     'e4a286c82d343ab9d8f77af35c6aaf0b',
   ]);
-});
+}, 120e3);
 
 test('Invalid parameters', async () => {
   type ITestFn = (options?: any) => Promise<string | Uint8Array>
@@ -424,7 +424,7 @@ test('Invalid parameters', async () => {
     await expect(fn({ ...options, outputType: 'x' })).rejects.toThrow();
     await expect(fn({ ...options, outputType: 'idx' })).rejects.toThrow();
   }
-});
+}, 120e3);
 
 test('Invalid verify parameters', async () => {
   type TestArgon2VerifyFn = (options?: unknown) => Promise<boolean>

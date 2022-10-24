@@ -2,6 +2,8 @@ import typescript from '@rollup/plugin-typescript';
 import json from '@rollup/plugin-json';
 import { terser } from '@el3um4s/rollup-plugin-terser';
 // import gzipPlugin from 'rollup-plugin-gzip';
+
+// rollup-plugin-license@2.8.2 depends on rollup@^1 || rollup@^2, rollup 3 are not supported.
 // import license from 'rollup-plugin-license';
 
 const ALGORITHMS = [
@@ -80,6 +82,7 @@ const MINIFIED_MAIN_BUNDLE_CONFIG = {
   ],
 };
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const INDIVIDUAL_BUNDLE_CONFIG = (algorithm) => ({
   input: `lib/${algorithm}.ts`,
   output: [

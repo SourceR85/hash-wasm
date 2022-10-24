@@ -9,13 +9,13 @@ const mutex = new Mutex();
 let wasmCache: IWASMInterface;
 const seedBuffer = new ArrayBuffer(8);
 
-function validateSeed(seed: number) {
+function validateSeed(seed: number): void {
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xFFFFFFFF) {
     throw new Error('Seed must be given as two valid 32-bit long unsigned integers (lo + high).');
   }
 }
 
-function writeSeed(arr: ArrayBuffer, low: number, high: number) {
+function writeSeed(arr: ArrayBuffer, low: number, high: number): void {
   // write in little-endian format
   const buffer = new DataView(arr);
   buffer.setUint32(0, low, true);
@@ -31,7 +31,7 @@ function writeSeed(arr: ArrayBuffer, low: number, high: number) {
  *  initialize the internal state of the algorithm (defaults to 0)
  * @returns Computed hash as a hexadecimal string
  */
-export async function xxhash64(data: IDataType, seedLow = 0, seedHigh = 0) {
+export async function xxhash64(data: IDataType, seedLow = 0, seedHigh = 0): Promise<string> {
   validateSeed(seedLow);
   validateSeed(seedHigh);
 
@@ -49,7 +49,7 @@ export async function xxhash64(data: IDataType, seedLow = 0, seedHigh = 0) {
  * @param seedHigh Higher 32 bits of the number used to
  *  initialize the internal state of the algorithm (defaults to 0)
  */
-export async function createXXHash64(seedLow = 0, seedHigh = 0) {
+export async function createXXHash64(seedLow = 0, seedHigh = 0): Promise<IHasher> {
   validateSeed(seedLow);
   validateSeed(seedHigh);
 

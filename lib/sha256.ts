@@ -13,7 +13,7 @@ let wasmCache: IWASMInterface;
  * @param data Input data (string, Buffer or TypedArray)
  * @returns Computed hash as a hexadecimal string
  */
-export async function sha256(data: IDataType) {
+export async function sha256(data: IDataType): Promise<string> {
   if (!wasmCache) wasmCache = await lockedCreate(mutex, wasmJson, 32);
 
   return wasmCache.calculate(data, 256);
@@ -22,7 +22,7 @@ export async function sha256(data: IDataType) {
 /**
  * Creates a new SHA-2 (SHA-256) hash instance
  */
-export async function createSHA256() {
+export async function createSHA256(): Promise<IHasher> {
   const wasm = await WASMInterface(wasmJson, 32);
   wasm.init(256);
 

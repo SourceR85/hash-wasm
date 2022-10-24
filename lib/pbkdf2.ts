@@ -81,7 +81,7 @@ async function calculatePBKDF2(
   return getDigestHex(digestChars, DK, hashLength);
 }
 
-const validateOptions = (options: IPBKDF2Options) => {
+const validateOptions = (options: IPBKDF2Options): void => {
   if (!options || typeof options !== 'object') {
     throw new Error('Invalid options parameter. It requires an object.');
   }

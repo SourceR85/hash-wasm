@@ -58,8 +58,8 @@ test('Invalid keys throw', async () => {
 
   // eslint-disable-next-line no-restricted-syntax
   for (const key of invalidKeys) {
-    await expect(() => blake3('a', 256, key as any)).toThrow();
-    await expect(() => createBLAKE3(256, key as any)).toThrow();
+    await expect(blake3('a', 256, key as any)).rejects.toThrow();
+    await expect(createBLAKE3(256, key as any)).rejects.toThrow();
   }
 });
 
@@ -74,8 +74,8 @@ test('Key size mismatch', async () => {
 
   // eslint-disable-next-line no-restricted-syntax
   for (const key of invalidKeys) {
-    await expect(() => blake3('a', 256, key as any)).rejects.toThrow();
-    await expect(() => createBLAKE3(256, key as any)).rejects.toThrow();
+    await expect(blake3('a', 256, key as any)).rejects.toThrow();
+    await expect(createBLAKE3(256, key as any)).rejects.toThrow();
   }
 });
 

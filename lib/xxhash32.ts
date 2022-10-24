@@ -8,7 +8,7 @@ import type { IDataType } from './util';
 const mutex = new Mutex();
 let wasmCache: IWASMInterface;
 
-function validateSeed(seed: number) {
+function validateSeed(seed: number): void {
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xFFFFFFFF) {
     throw new Error('Seed must be a valid 32-bit long unsigned integer.');
   }
@@ -19,7 +19,7 @@ function validateSeed(seed: number) {
  * @param seed Number used to initialize the internal state of the algorithm (defaults to 0)
  * @returns Computed hash as a hexadecimal string
  */
-export async function xxhash32(data: IDataType, seed = 0) {
+export async function xxhash32(data: IDataType, seed = 0): Promise<string> {
   validateSeed(seed);
 
   if (!wasmCache) wasmCache = await lockedCreate(mutex, wasmJson, 4);
@@ -32,7 +32,7 @@ export async function xxhash32(data: IDataType, seed = 0) {
  * @param data Input data (string, Buffer or TypedArray)
  * @param seed Number used to initialize the internal state of the algorithm (defaults to 0)
  */
-export async function createXXHash32(seed = 0) {
+export async function createXXHash32(seed = 0): Promise<IHasher> {
   validateSeed(seed);
 
   const wasm = await WASMInterface(wasmJson, 4);

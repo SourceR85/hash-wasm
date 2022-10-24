@@ -39,7 +39,7 @@ export async function blake3(
     wasmCache = await lockedCreate(mutex, wasmJson, hashLength);
   }
 
-  if (key) {
+  if (key !== undefined) {
     const keyBuffer = getUInt8Buffer(key);
     if (keyBuffer.length !== 32) {
       throw new Error('Key length must be exactly 32 bytes');
@@ -69,7 +69,7 @@ export async function createBLAKE3(
 
   const wasm = await WASMInterface(wasmJson, outputSize);
 
-  if (key) {
+  if (key !== undefined) {
     keyBuffer = getUInt8Buffer(key);
     if (keyBuffer.length !== 32) {
       throw new Error('Key length must be exactly 32 bytes');

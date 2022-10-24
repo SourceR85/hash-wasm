@@ -48,7 +48,7 @@ interface IArgon2OptionsExtended extends IArgon2Options {
   hashType: 'i' | 'd' | 'id';
 }
 
-function encodeResult(salt: Uint8Array, options: IArgon2OptionsExtended, res: Uint8Array) {
+function encodeResult(salt: Uint8Array, options: IArgon2OptionsExtended, res: Uint8Array): string {
   const parameters = [
     `m=${options.memorySize}`,
     `t=${options.iterations}`,
@@ -64,7 +64,7 @@ function int32LE(x: number): Uint8Array {
   return new Uint8Array(uint32View.buffer);
 }
 
-async function hashFunc(blake512: IHasher, buf: Uint8Array, len: number) {
+async function hashFunc(blake512: IHasher, buf: Uint8Array, len: number): Promise<Uint8Array> {
   if (len <= 64) {
     const blake = await createBLAKE2b(len * 8);
     blake.update(int32LE(len));
@@ -105,7 +105,7 @@ async function hashFunc(blake512: IHasher, buf: Uint8Array, len: number) {
   return ret;
 }
 
-function getHashType(type: IArgon2OptionsExtended['hashType']) {
+function getHashType(type: IArgon2OptionsExtended['hashType']): 0 | 1 | 2 {
   switch (type) {
     case 'd':
       return 0;
@@ -116,7 +116,7 @@ function getHashType(type: IArgon2OptionsExtended['hashType']) {
   }
 }
 
-async function argon2Internal(options: IArgon2OptionsExtended) {
+async function argon2Internal(options: IArgon2OptionsExtended): Promise<string | Uint8Array> {
   const { parallelism, iterations, hashLength } = options;
   const password = getUInt8Buffer(options.password);
   const salt = getUInt8Buffer(options.salt);
@@ -190,7 +190,7 @@ async function argon2Internal(options: IArgon2OptionsExtended) {
   return res;
 }
 
-const validateOptions = (options: IArgon2Options) => {
+const validateOptions = (options: IArgon2Options): void => {
   if (!options || typeof options !== 'object') {
     throw new Error('Invalid options parameter. It requires an object.');
   }
@@ -300,7 +300,7 @@ export interface Argon2VerifyOptions {
   hash: string;
 }
 
-const getHashParameters = (password: IDataType, encoded: string) => {
+const getHashParameters = (password: IDataType, encoded: string): IArgon2OptionsExtended => {
   const regex = /^\$argon2(id|i|d)\$v=([0-9]+)\$((?:[mtp]=[0-9]+,){2}[mtp]=[0-9]+)\$([A-Za-z0-9+/]+)\$([A-Za-z0-9+/]+)$/;
   const match = encoded.match(regex);
   if (!match) {
@@ -332,7 +332,7 @@ const getHashParameters = (password: IDataType, encoded: string) => {
   } as IArgon2OptionsExtended;
 };
 
-const validateVerifyOptions = (options: Argon2VerifyOptions) => {
+const validateVerifyOptions = (options: Argon2VerifyOptions): void => {
   if (!options || typeof options !== 'object') {
     throw new Error('Invalid options parameter. It requires an object.');
   }
@@ -346,7 +346,7 @@ const validateVerifyOptions = (options: Argon2VerifyOptions) => {
  * Verifies password using the argon2 password-hashing function
  * @returns True if the encoded hash matches the password
  */
-export async function argon2Verify(options: Argon2VerifyOptions) {
+export async function argon2Verify(options: Argon2VerifyOptions): Promise<boolean> {
   validateVerifyOptions(options);
 
   const params = getHashParameters(options.password, options.hash);

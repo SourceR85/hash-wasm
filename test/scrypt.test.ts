@@ -1,15 +1,16 @@
+import type { IDataType } from 'lib/util';
 import { scrypt } from '../lib';
 /* global test, expect */
 
 const hash = async (
-  password,
-  salt,
-  costFactor,
-  blockSize,
-  parallelism,
-  hashLength,
-  outputType,
-) => scrypt({
+  password: IDataType,
+  salt: IDataType,
+  costFactor: number,
+  blockSize: number,
+  parallelism: number,
+  hashLength: number,
+  outputType: 'binary' | 'hex' | undefined,
+): Promise<string> => scrypt({
   password,
   salt,
   costFactor,
@@ -92,25 +93,25 @@ test('scrypt binary', async () => {
 });
 
 test('invalid parameters', async () => {
-  await expect(() => hash('', '', '', 1, 1, 16, 'hex')).rejects.toThrow();
-  await expect(() => hash('', '', 1, 1, 1, 16, 'hex')).rejects.toThrow();
-  await expect(() => hash('', '', 3, 1, 1, 16, 'hex')).rejects.toThrow();
-  await expect(() => hash('', '', 9, 1, 1, 16, 'hex')).rejects.toThrow();
-  await expect(() => hash('', '', 63, 1, 1, 16, 'hex')).rejects.toThrow();
-  await expect(() => hash('', '', 65, 1, 1, 16, 'hex')).rejects.toThrow();
-  await expect(() => hash('', '', 2, '', 1, 16, 'hex')).rejects.toThrow();
-  await expect(() => hash('', '', 2, 0, 1, 16, 'hex')).rejects.toThrow();
-  await expect(() => hash('', '', 2, 1, '', 16, 'hex')).rejects.toThrow();
-  await expect(() => hash('', '', 2, 1, 0, 16, 'hex')).rejects.toThrow();
-  await expect(() => hash('', '', 2, 1, 1, '', 'hex')).rejects.toThrow();
-  await expect(() => hash('', '', 2, 1, 1, 0, 'hex')).rejects.toThrow();
-  await expect(() => hash('', '', 2, 1, 1, 16, 'binaryx')).rejects.toThrow();
-  await expect(() => hash('', '', 2, 1, 1, 16, '')).rejects.toThrow();
-  await expect(() => hash('', 1, 2, 1, 1, 16, 'hex')).rejects.toThrow();
-  await expect(() => hash(1, '', 2, 1, 1, 16, 'hex')).rejects.toThrow();
+  await expect(hash('', '', '' as any, 1, 1, 16, 'hex')).rejects.toThrow();
+  await expect(hash('', '', 1, 1, 1, 16, 'hex')).rejects.toThrow();
+  await expect(hash('', '', 3, 1, 1, 16, 'hex')).rejects.toThrow();
+  await expect(hash('', '', 9, 1, 1, 16, 'hex')).rejects.toThrow();
+  await expect(hash('', '', 63, 1, 1, 16, 'hex')).rejects.toThrow();
+  await expect(hash('', '', 65, 1, 1, 16, 'hex')).rejects.toThrow();
+  await expect(hash('', '', 2, '' as any, 1, 16, 'hex')).rejects.toThrow();
+  await expect(hash('', '', 2, 0, 1, 16, 'hex')).rejects.toThrow();
+  await expect(hash('', '', 2, 1, '' as any, 16, 'hex')).rejects.toThrow();
+  await expect(hash('', '', 2, 1, 0, 16, 'hex')).rejects.toThrow();
+  await expect(hash('', '', 2, 1, 1, '' as any, 'hex')).rejects.toThrow();
+  await expect(hash('', '', 2, 1, 1, 0, 'hex')).rejects.toThrow();
+  await expect(hash('', '', 2, 1, 1, 16, 'binaryx' as any)).rejects.toThrow();
+  await expect(hash('', '', 2, 1, 1, 16, '' as any)).rejects.toThrow();
+  await expect(hash('', 1 as any, 2, 1, 1, 16, 'hex')).rejects.toThrow();
+  await expect(hash(1 as any, '', 2, 1, 1, 16, 'hex')).rejects.toThrow();
 
-  await expect(() => (scrypt as any)()).rejects.toThrow();
-  await expect(() => (scrypt as any)([])).rejects.toThrow();
-  await expect(() => (scrypt as any)({})).rejects.toThrow();
-  await expect(() => (scrypt as any)(1)).rejects.toThrow();
+  await expect((scrypt as any)()).rejects.toThrow();
+  await expect((scrypt as any)([])).rejects.toThrow();
+  await expect((scrypt as any)({})).rejects.toThrow();
+  await expect((scrypt as any)(1)).rejects.toThrow();
 });
