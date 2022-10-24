@@ -16,15 +16,26 @@ jobs:
         node-version: [18.x]
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
           registry-url: "https://registry.npmjs.org"
-      - run: npm ci
-      - run: npm run build
-      - run: npm test
+      - name: npm install, build, and test
+        run: |
+          npm ci
+          npm run build
+          npm test
+      - name: store artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: hash-wasm@${{ github.ref_name }}.zip
+          path: |
+            dist
+            wasm
+          if-no-files-found: error
       - run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
