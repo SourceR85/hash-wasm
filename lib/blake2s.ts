@@ -1,20 +1,21 @@
-import { WASMInterface, IWASMInterface, IHasher } from './WASMInterface';
+import { WASMInterface } from './WASMInterface';
+import type { IWASMInterface, IHasher } from './WASMInterface';
 import Mutex from './mutex';
 import wasmJson from '../wasm/blake2s.wasm.json';
 import lockedCreate from './lockedCreate';
-import { getUInt8Buffer, IDataType } from './util';
+import type { IDataType } from './util';
+import { getUInt8Buffer } from './util';
 
 const mutex = new Mutex();
-let wasmCache: IWASMInterface = null;
+let wasmCache: IWASMInterface;
 
-function validateBits(bits: number) {
+function validateBits(bits: number): void {
   if (!Number.isInteger(bits) || bits < 8 || bits > 256 || bits % 8 !== 0) {
-    return new Error('Invalid variant! Valid values: 8, 16, ..., 256');
+    throw new Error('Invalid variant! Valid values: 8, 16, ..., 256');
   }
-  return null;
 }
 
-function getInitParam(outputBits, keyBits) {
+function getInitParam(outputBits: number, keyBits: number): number {
   // eslint-disable-next-line no-bitwise
   return outputBits | (keyBits << 16);
 }
@@ -27,45 +28,33 @@ function getInitParam(outputBits, keyBits) {
  * @param key Optional key (string, Buffer or TypedArray). Maximum length is 32 bytes.
  * @returns Computed hash as a hexadecimal string
  */
-export function blake2s(
-  data: IDataType, bits = 256, key: IDataType = null,
+export async function blake2s(
+  data: IDataType,
+  bits = 256,
+  key: IDataType | undefined = undefined,
 ): Promise<string> {
-  if (validateBits(bits)) {
-    return Promise.reject(validateBits(bits));
-  }
-
-  let keyBuffer = null;
-  let initParam = bits;
-  if (key !== null) {
-    keyBuffer = getUInt8Buffer(key);
-    if (keyBuffer.length > 32) {
-      return Promise.reject(new Error('Max key length is 32 bytes'));
-    }
-    initParam = getInitParam(bits, keyBuffer.length);
-  }
+  validateBits(bits);
 
   const hashLength = bits / 8;
+  let initParam = bits;
 
-  if (wasmCache === null || wasmCache.hashLength !== hashLength) {
-    return lockedCreate(mutex, wasmJson, hashLength)
-      .then((wasm) => {
-        wasmCache = wasm;
-        if (initParam > 512) {
-          wasmCache.writeMemory(keyBuffer);
-        }
-        return wasmCache.calculate(data, initParam);
-      });
+  if (!wasmCache || wasmCache.hashLength !== hashLength) {
+    wasmCache = await lockedCreate(mutex, wasmJson, hashLength);
   }
 
-  try {
+  if (key !== undefined) {
+    const keyBuffer = getUInt8Buffer(key);
+    if (keyBuffer.length > 32) {
+      throw new Error('Max key length is 32 bytes');
+    }
+    initParam = getInitParam(bits, keyBuffer.length);
+
     if (initParam > 512) {
       wasmCache.writeMemory(keyBuffer);
     }
-    const hash = wasmCache.calculate(data, initParam);
-    return Promise.resolve(hash);
-  } catch (err) {
-    return Promise.reject(err);
   }
+
+  return wasmCache.calculate(data, initParam);
 }
 
 /**
@@ -74,49 +63,48 @@ export function blake2s(
  *             divisible by 8, between 8 and 256. Defaults to 256.
  * @param key Optional key (string, Buffer or TypedArray). Maximum length is 32 bytes.
  */
-export function createBLAKE2s(
-  bits = 256, key: IDataType = null,
+export async function createBLAKE2s(
+  bits = 256,
+  key: IDataType | undefined = undefined,
 ): Promise<IHasher> {
-  if (validateBits(bits)) {
-    return Promise.reject(validateBits(bits));
-  }
+  validateBits(bits);
 
-  let keyBuffer = null;
+  const outputSize = bits / 8;
   let initParam = bits;
-  if (key !== null) {
+  let keyBuffer: Uint8Array;
+
+  const wasm = await WASMInterface(wasmJson, outputSize);
+
+  if (key !== undefined) {
     keyBuffer = getUInt8Buffer(key);
     if (keyBuffer.length > 32) {
       return Promise.reject(new Error('Max key length is 32 bytes'));
     }
     initParam = getInitParam(bits, keyBuffer.length);
-  }
-
-  const outputSize = bits / 8;
-
-  return WASMInterface(wasmJson, outputSize).then((wasm) => {
     if (initParam > 512) {
       wasm.writeMemory(keyBuffer);
     }
-    wasm.init(initParam);
+  }
 
-    const obj: IHasher = {
-      init: initParam > 512
-        ? () => {
-          wasm.writeMemory(keyBuffer);
-          wasm.init(initParam);
-          return obj;
-        }
-        : () => {
-          wasm.init(initParam);
-          return obj;
-        },
-      update: (data) => { wasm.update(data); return obj; },
-      digest: (outputType) => wasm.digest(outputType) as any,
-      save: () => wasm.save(),
-      load: (data) => { wasm.load(data); return obj; },
-      blockSize: 64,
-      digestSize: outputSize,
-    };
-    return obj;
-  });
+  wasm.init(initParam);
+
+  const obj: IHasher = {
+    init: initParam > 512
+      ? (): IHasher => {
+        wasm.writeMemory(keyBuffer);
+        wasm.init(initParam);
+        return obj;
+      }
+      : (): IHasher => {
+        wasm.init(initParam);
+        return obj;
+      },
+    update: (data) => { wasm.update(data); return obj; },
+    digest: (outputType) => wasm.digest(outputType),
+    save: () => wasm.save(),
+    load: (data) => { wasm.load(data); return obj; },
+    blockSize: 64,
+    digestSize: outputSize,
+  };
+  return obj;
 }

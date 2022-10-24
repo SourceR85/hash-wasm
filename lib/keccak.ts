@@ -1,19 +1,18 @@
-import { WASMInterface, IWASMInterface, IHasher } from './WASMInterface';
+import { WASMInterface } from './WASMInterface';
+import type { IWASMInterface, IHasher } from './WASMInterface';
 import Mutex from './mutex';
 import wasmJson from '../wasm/sha3.wasm.json';
 import lockedCreate from './lockedCreate';
-import { IDataType } from './util';
+import type { IDataType } from './util';
 
 type IValidBits = 224 | 256 | 384 | 512;
 const mutex = new Mutex();
-let wasmCache: IWASMInterface = null;
+let wasmCache: IWASMInterface;
 
-function validateBits(bits: IValidBits) {
+function validateBits(bits: IValidBits): void {
   if (![224, 256, 384, 512].includes(bits)) {
-    return new Error('Invalid variant! Valid values: 224, 256, 384, 512');
+    throw new Error('Invalid variant! Valid values: 224, 256, 384, 512');
   }
-
-  return null;
 }
 
 /**
@@ -22,53 +21,38 @@ function validateBits(bits: IValidBits) {
  * @param bits Number of output bits. Valid values: 224, 256, 384, 512
  * @returns Computed hash as a hexadecimal string
  */
-export function keccak(
-  data: IDataType, bits: IValidBits = 512,
-): Promise<string> {
-  if (validateBits(bits)) {
-    return Promise.reject(validateBits(bits));
-  }
+export async function keccak(data: IDataType, bits: IValidBits = 512): Promise<string> {
+  validateBits(bits);
 
   const hashLength = bits / 8;
 
-  if (wasmCache === null || wasmCache.hashLength !== hashLength) {
-    return lockedCreate(mutex, wasmJson, hashLength)
-      .then((wasm) => {
-        wasmCache = wasm;
-        return wasmCache.calculate(data, bits, 0x01);
-      });
+  if (!wasmCache || wasmCache.hashLength !== hashLength) {
+    wasmCache = await lockedCreate(mutex, wasmJson, hashLength);
   }
 
-  try {
-    const hash = wasmCache.calculate(data, bits, 0x01);
-    return Promise.resolve(hash);
-  } catch (err) {
-    return Promise.reject(err);
-  }
+  return wasmCache.calculate(data, bits, 0x01);
 }
 
 /**
  * Creates a new Keccak hash instance
  * @param bits Number of output bits. Valid values: 224, 256, 384, 512
  */
-export function createKeccak(bits: IValidBits = 512): Promise<IHasher> {
-  if (validateBits(bits)) {
-    return Promise.reject(validateBits(bits));
-  }
+export async function createKeccak(bits: IValidBits = 512): Promise<IHasher> {
+  validateBits(bits);
 
   const outputSize = bits / 8;
 
-  return WASMInterface(wasmJson, outputSize).then((wasm) => {
-    wasm.init(bits);
-    const obj: IHasher = {
-      init: () => { wasm.init(bits); return obj; },
-      update: (data) => { wasm.update(data); return obj; },
-      digest: (outputType) => wasm.digest(outputType, 0x01) as any,
-      save: () => wasm.save(),
-      load: (data) => { wasm.load(data); return obj; },
-      blockSize: 200 - 2 * outputSize,
-      digestSize: outputSize,
-    };
-    return obj;
-  });
+  const wasm = await WASMInterface(wasmJson, outputSize);
+  wasm.init(bits);
+
+  const obj: IHasher = {
+    init: () => { wasm.init(bits); return obj; },
+    update: (data) => { wasm.update(data); return obj; },
+    digest: (outputType) => wasm.digest(outputType, 0x01),
+    save: () => wasm.save(),
+    load: (data) => { wasm.load(data); return obj; },
+    blockSize: 200 - 2 * outputSize,
+    digestSize: outputSize,
+  };
+  return obj;
 }

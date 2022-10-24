@@ -1,18 +1,28 @@
 /* eslint-disable no-console */
 /* global test, expect */
 import {
-  blake2b, md4, md5, sha1, sha256, sha384, sha3, xxhash32, xxhash64, ripemd160, keccak,
+  blake2b,
+  md4,
+  md5,
+  sha1,
+  sha256,
+  sha384,
+  sha3,
+  xxhash32,
+  xxhash64,
+  ripemd160,
+  keccak,
 } from '../lib';
 
-function getMemoryUsage() {
+function getMemoryUsage(): string {
   const usage = process.memoryUsage().heapUsed;
   // eslint-disable-next-line no-bitwise
   const i = ~~(Math.log2(usage) / 10);
   // eslint-disable-next-line no-restricted-properties,prefer-template
-  return (usage / Math.pow(1024, i)).toFixed(2) + ('KMGTPEZY'[i - 1] || '') + 'B';
+  return (usage / 1024 ** i).toFixed(2) + ('KMGTPEZY'[i - 1] || '') + 'B';
 }
 
-test('Async cycle multiple algorithms', async () => {
+test('Async cycle multiple algorithms', async (): Promise<void> => {
   console.log('Before', getMemoryUsage());
 
   const promises = [];

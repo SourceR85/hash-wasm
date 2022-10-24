@@ -73,7 +73,7 @@ test('chunked', async () => {
 
 test('chunked increasing length', async () => {
   const hash = await createBLAKE2s(256);
-  const test = async (maxLen: number) => {
+  const test = async (maxLen: number): Promise<void> => {
     const chunks = getVariableLengthChunks(maxLen);
     const flatchunks = chunks.reduce((acc, val) => acc.concat(val), []);
     const hashRef = await blake2s(new Uint8Array(flatchunks), 256);

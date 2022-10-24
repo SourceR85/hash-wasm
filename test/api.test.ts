@@ -1,9 +1,10 @@
 /* eslint-disable no-await-in-loop */
 /* global test, expect */
-import * as api from '../lib';
-import { IHasher } from '../lib/WASMInterface';
 
-async function createAllFunctions(includeHMAC) : Promise<IHasher[]> {
+import * as api from '../lib';
+import type { IHasher } from '../lib/WASMInterface';
+
+async function createAllFunctions(includeHMAC: boolean): Promise<IHasher[]> {
   const keys = Object.keys(api).filter((key) => key.startsWith('create') && (includeHMAC || key !== 'createHMAC'));
 
   return Promise.all(
@@ -12,8 +13,10 @@ async function createAllFunctions(includeHMAC) : Promise<IHasher[]> {
         switch (key) {
           case 'createHMAC':
             return api[key](api.createMD5(), 'x');
-          default:
-            return api[key]();
+          default: {
+            const fn = api[key as keyof typeof api] as unknown as () => IHasher;
+            return fn();
+          }
         }
       },
     ),

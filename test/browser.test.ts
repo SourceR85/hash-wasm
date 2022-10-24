@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable no-restricted-globals */
 /* eslint-disable no-await-in-loop */
 /* global test, expect */
+export { };
 
 beforeEach(() => {
   jest.resetModules();
@@ -10,28 +12,16 @@ test('Throws when WebAssembly is unavailable', async () => {
   const { md5 } = jest.requireActual('../lib');
 
   const WASM = globalThis.WebAssembly;
+  // @ts-ignore
   globalThis.WebAssembly = undefined;
 
   await expect(() => md5('a')).rejects.toThrow();
   globalThis.WebAssembly = WASM;
 });
 
-const NodeBuffer = (globalThis as any).Buffer;
-
-class TextEncoderMock {
-  // eslint-disable-next-line class-methods-use-this
-  encode(str) {
-    const buf = NodeBuffer.from(str);
-    return new Uint8Array(buf.buffer, buf.byteOffset, buf.length);
-  }
-}
-
 test('Simulate browsers', async () => {
   const global = globalThis;
-  ((globalThis as any).TextEncoder as any) = TextEncoderMock;
-  ((globalThis as any).Buffer as any) = undefined;
   delete (globalThis as any).Buffer;
-  (globalThis as any) = undefined;
 
   const { md5 } = jest.requireActual('../lib');
   expect(await md5('a')).toBe('0cc175b9c0f1b6a831c399e269772661');
@@ -44,7 +34,6 @@ test('Simulate browsers', async () => {
 test('Use global self', async () => {
   const global = globalThis;
   (globalThis as any).self = global;
-  (globalThis as any) = undefined;
 
   const { md5 } = jest.requireActual('../lib');
   expect(await md5('a')).toBe('0cc175b9c0f1b6a831c399e269772661');
@@ -54,8 +43,8 @@ test('Use global self', async () => {
 
 test('Delete global self', async () => {
   const global = globalThis;
+  // @ts-ignore
   delete globalThis.self;
-  (globalThis as any) = undefined;
 
   const { md5 } = jest.requireActual('../lib');
   expect(await md5('a')).toBe('0cc175b9c0f1b6a831c399e269772661');
@@ -66,7 +55,6 @@ test('Delete global self', async () => {
 test('Use global window', async () => {
   const global = globalThis;
   (globalThis as any).window = global;
-  (globalThis as any) = undefined;
 
   const { md5 } = jest.requireActual('../lib');
   expect(await md5('a')).toBe('0cc175b9c0f1b6a831c399e269772661');
@@ -76,8 +64,8 @@ test('Use global window', async () => {
 
 test('Delete global self + window', async () => {
   const global = globalThis;
+  // @ts-ignore
   delete globalThis.window;
-  (globalThis as any) = undefined;
 
   const { md5 } = jest.requireActual('../lib');
   expect(await md5('a')).toBe('0cc175b9c0f1b6a831c399e269772661');

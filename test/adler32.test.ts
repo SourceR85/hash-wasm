@@ -1,7 +1,8 @@
-import fs from 'fs';
+/* global test, expect */
+
+import fs from 'node:fs';
 import { adler32, createAdler32 } from '../lib';
 import { getVariableLengthChunks } from './util';
-/* global test, expect */
 
 test('simple strings', async () => {
   expect(await adler32('')).toBe('00000001');
@@ -74,7 +75,7 @@ test('chunked', async () => {
 
 test('chunked increasing length', async () => {
   const hash = await createAdler32();
-  const test = async (maxLen: number) => {
+  const test = async (maxLen: number): Promise<void> => {
     const chunks = getVariableLengthChunks(maxLen);
     const flatchunks = chunks.reduce((acc, val) => acc.concat(val), []);
     const hashRef = await adler32(new Uint8Array(flatchunks));

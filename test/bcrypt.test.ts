@@ -2,8 +2,11 @@ import { bcrypt, bcryptVerify } from '../lib';
 /* global test, expect */
 
 const hash = async (
-  password, salt, costFactor, outputType,
-) => bcrypt({
+  password: string | Buffer,
+  salt: string | Buffer,
+  costFactor: number,
+  outputType?: 'binary' | 'hex' | 'encoded',
+): Promise<string> => bcrypt({
   password,
   salt,
   costFactor,
@@ -283,70 +286,77 @@ test('bcrypt verify bundled tests', async () => {
 });
 
 test('Invalid bcrypt parameters', async () => {
-  await expect(bcrypt('' as any)).rejects.toThrow();
-  await expect(bcrypt([] as any)).rejects.toThrow();
-  await expect((bcrypt as any)()).rejects.toThrow();
-  const options: Parameters<typeof bcrypt>[0] = {
+  type TestBcryptFn = (options?: Record<any, any>) => Promise<boolean>
+  const testBcrypt = bcrypt as unknown as TestBcryptFn;
+  await expect(testBcrypt('' as any)).rejects.toThrow();
+  await expect(testBcrypt([] as any)).rejects.toThrow();
+  await expect((testBcrypt as any)()).rejects.toThrow();
+  const options: Parameters<typeof testBcrypt>[0] = {
     password: 'p',
     salt: '1234567890123456',
     costFactor: 4,
     outputType: 'encoded',
   };
 
-  await expect(bcrypt(options)).resolves.not.toThrow();
+  await expect(testBcrypt(options)).resolves.not.toThrow();
 
-  await expect(bcrypt({ ...options, password: undefined })).rejects.toThrow();
-  await expect(bcrypt({ ...options, password: null })).rejects.toThrow();
-  await expect(bcrypt({ ...options, password: 1 as any })).rejects.toThrow();
-  await expect(bcrypt({ ...options, password: [] as any })).rejects.toThrow();
-  await expect(bcrypt({ ...options, password: Buffer.from([]) })).rejects.toThrow();
-  await expect(bcrypt({ ...options, password: '' })).rejects.toThrow();
-  await expect(bcrypt({ ...options, password: Buffer.alloc(73) })).rejects.toThrow();
-  await expect(bcrypt({ ...options, password: [...Array(73)].fill('a').join('').toString() })).rejects.toThrow();
+  await expect(testBcrypt({ ...options, password: undefined })).rejects.toThrow();
+  await expect(testBcrypt({ ...options, password: null })).rejects.toThrow();
+  await expect(testBcrypt({ ...options, password: 1 as any })).rejects.toThrow();
+  await expect(testBcrypt({ ...options, password: [] as any })).rejects.toThrow();
+  await expect(testBcrypt({ ...options, password: Buffer.from([]) })).rejects.toThrow();
+  await expect(testBcrypt({ ...options, password: '' })).rejects.toThrow();
+  await expect(testBcrypt({ ...options, password: Buffer.alloc(73) })).rejects.toThrow();
+  await expect(testBcrypt({ ...options, password: [...Array(73)].fill('a').join('').toString() })).rejects.toThrow();
 
-  await expect(bcrypt({ ...options, salt: undefined })).rejects.toThrow();
-  await expect(bcrypt({ ...options, salt: null })).rejects.toThrow();
-  await expect(bcrypt({ ...options, salt: '123456789012345' })).rejects.toThrow();
-  await expect(bcrypt({ ...options, salt: '12345678901234567' })).rejects.toThrow();
-  await expect(bcrypt({ ...options, salt: '' })).rejects.toThrow();
-  await expect(bcrypt({ ...options, salt: Buffer.from([1, 2, 3, 4, 5, 6, 7]) })).rejects.toThrow();
+  await expect(testBcrypt({ ...options, salt: undefined })).rejects.toThrow();
+  await expect(testBcrypt({ ...options, salt: null })).rejects.toThrow();
+  await expect(testBcrypt({ ...options, salt: '123456789012345' })).rejects.toThrow();
+  await expect(testBcrypt({ ...options, salt: '12345678901234567' })).rejects.toThrow();
+  await expect(testBcrypt({ ...options, salt: '' })).rejects.toThrow();
+  await expect(testBcrypt({
+    ...options,
+    salt: Buffer.from([1, 2, 3, 4, 5, 6, 7]),
+  })).rejects.toThrow();
 
-  await expect(bcrypt({ ...options, costFactor: undefined })).rejects.toThrow();
-  await expect(bcrypt({ ...options, costFactor: null })).rejects.toThrow();
-  await expect(bcrypt({ ...options, costFactor: 0 })).rejects.toThrow();
-  await expect(bcrypt({ ...options, costFactor: '' as any })).rejects.toThrow();
-  await expect(bcrypt({ ...options, costFactor: '0' as any })).rejects.toThrow();
-  await expect(bcrypt({ ...options, costFactor: 3 })).rejects.toThrow();
-  await expect(bcrypt({ ...options, costFactor: 32 })).rejects.toThrow();
+  await expect(testBcrypt({ ...options, costFactor: undefined })).rejects.toThrow();
+  await expect(testBcrypt({ ...options, costFactor: null })).rejects.toThrow();
+  await expect(testBcrypt({ ...options, costFactor: 0 })).rejects.toThrow();
+  await expect(testBcrypt({ ...options, costFactor: '' as any })).rejects.toThrow();
+  await expect(testBcrypt({ ...options, costFactor: '0' as any })).rejects.toThrow();
+  await expect(testBcrypt({ ...options, costFactor: 3 })).rejects.toThrow();
+  await expect(testBcrypt({ ...options, costFactor: 32 })).rejects.toThrow();
 
-  await expect(bcrypt({ ...options, outputType: null })).rejects.toThrow();
-  await expect(bcrypt({ ...options, outputType: '' as any })).rejects.toThrow();
-  await expect(bcrypt({ ...options, outputType: 'x' as any })).rejects.toThrow();
-  await expect(bcrypt({ ...options, outputType: 'idx' as any })).rejects.toThrow();
+  await expect(testBcrypt({ ...options, outputType: null })).rejects.toThrow();
+  await expect(testBcrypt({ ...options, outputType: '' as any })).rejects.toThrow();
+  await expect(testBcrypt({ ...options, outputType: 'x' as any })).rejects.toThrow();
+  await expect(testBcrypt({ ...options, outputType: 'idx' as any })).rejects.toThrow();
 });
 
 test('Invalid bcrypt verify parameters', async () => {
-  await expect(bcryptVerify('' as any)).rejects.toThrow();
-  await expect(bcryptVerify([] as any)).rejects.toThrow();
-  await expect((bcryptVerify as any)()).rejects.toThrow();
-  const options: Parameters<typeof bcryptVerify>[0] = {
+  type TestBcryptVerifyFn = (options?: Record<any, any>) => Promise<boolean>
+  const testBcryptVerify = bcryptVerify as unknown as TestBcryptVerifyFn;
+  await expect(testBcryptVerify('' as any)).rejects.toThrow();
+  await expect(testBcryptVerify([] as any)).rejects.toThrow();
+  await expect((testBcryptVerify as any)()).rejects.toThrow();
+  const options: Parameters<typeof testBcryptVerify>[0] = {
     password: 'a',
     hash: '$2a$06$KRGxLBS0Lxe3KBCwKxOzLeUQ0eaAQoaT9eYD/M6ixOkZwzuuCPPwO',
   };
 
-  await expect(bcryptVerify(options)).resolves.not.toThrow();
+  await expect(testBcryptVerify(options)).resolves.not.toThrow();
 
-  await expect(bcryptVerify({ ...options, password: undefined })).rejects.toThrow();
-  await expect(bcryptVerify({ ...options, password: null })).rejects.toThrow();
-  await expect(bcryptVerify({ ...options, password: 1 as any })).rejects.toThrow();
-  await expect(bcryptVerify({ ...options, password: [] as any })).rejects.toThrow();
-  await expect(bcryptVerify({ ...options, password: Buffer.from([]) })).rejects.toThrow();
-  await expect(bcryptVerify({ ...options, password: '' })).rejects.toThrow();
-  await expect(bcryptVerify({ ...options, password: Buffer.alloc(73) })).rejects.toThrow();
-  await expect(bcryptVerify({ ...options, password: [...Array(73)].fill('a').join('').toString() })).rejects.toThrow();
+  await expect(testBcryptVerify({ ...options, password: undefined })).rejects.toThrow();
+  await expect(testBcryptVerify({ ...options, password: null })).rejects.toThrow();
+  await expect(testBcryptVerify({ ...options, password: 1 as any })).rejects.toThrow();
+  await expect(testBcryptVerify({ ...options, password: [] as any })).rejects.toThrow();
+  await expect(testBcryptVerify({ ...options, password: Buffer.from([]) })).rejects.toThrow();
+  await expect(testBcryptVerify({ ...options, password: '' })).rejects.toThrow();
+  await expect(testBcryptVerify({ ...options, password: Buffer.alloc(73) })).rejects.toThrow();
+  await expect(testBcryptVerify({ ...options, password: [...Array(73)].fill('a').join('').toString() })).rejects.toThrow();
 
-  const testHash = async (hashStr: string) => {
-    await expect(bcryptVerify({ ...options, hash: hashStr })).rejects.toThrow();
+  const testHash = async (hashStr: string | null | undefined): Promise<void> => {
+    await expect(testBcryptVerify({ ...options, hash: hashStr })).rejects.toThrow();
   };
 
   await testHash(undefined);

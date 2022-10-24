@@ -74,7 +74,7 @@ test('chunked', async () => {
 
 test('chunked increasing length', async () => {
   const hash = await createCRC32C();
-  const test = async (maxLen: number) => {
+  const test = async (maxLen: number): Promise<void> => {
     const chunks = getVariableLengthChunks(maxLen);
     const flatchunks = chunks.reduce((acc, val) => acc.concat(val), []);
     const hashRef = await crc32c(new Uint8Array(flatchunks));

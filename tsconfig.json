@@ -4,13 +4,13 @@
     "module": "ES6",
     "lib": ["es2017", "es7", "es6", "dom"],
     "baseUrl": ".",
-    "strict": false,
+    "strict": true,
+    "isolatedModules": true,
     "esModuleInterop": true,
-    "downlevelIteration": true,
+    "downlevelIteration": false,
     "moduleResolution": "node",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "types": ["jest", "node"]
   },
-  "include": [
-    "lib",
-  ]
+  "include": ["lib", "test/**/*"]
 }

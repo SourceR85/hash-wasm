@@ -1,5 +1,6 @@
 /* eslint-disable no-restricted-syntax */
 import crypto from 'crypto';
+import type { IDataType } from 'lib/util';
 import {
   createSHA512,
   pbkdf2,
@@ -7,12 +8,24 @@ import {
 
 /* global test, expect */
 
-function getNodePBKDF2(password, salt, iterations, keyLength, outputType?: string) {
+function getNodePBKDF2(
+  password: IDataType,
+  salt: IDataType,
+  iterations: number,
+  keyLength: number,
+  outputType?: string,
+): string | Uint8Array {
   const buf = crypto.pbkdf2Sync(password, salt, iterations, keyLength, 'sha512');
   return outputType === 'binary' ? new Uint8Array(buf.buffer, buf.byteOffset, buf.length) : buf.toString('hex');
 }
 
-async function getWasmPBKDF2(password, salt, iterations, keyLength, outputType?: 'hex' | 'binary') {
+async function getWasmPBKDF2(
+  password: IDataType,
+  salt: IDataType,
+  iterations: number,
+  keyLength: number,
+  outputType?: 'hex' | 'binary',
+): Promise<string> {
   const hash = await pbkdf2({
     password,
     salt,
@@ -31,12 +44,12 @@ test('invalid parameters', () => {
   expect(() => getWasmPBKDF2('pwd', 'salt', 1, 1, {} as any)).rejects.toThrow();
   expect(() => getWasmPBKDF2('pwd', 'salt', 1, 0)).rejects.toThrow();
   expect(() => getWasmPBKDF2('pwd', 'salt', 0, 1)).rejects.toThrow();
-  expect(() => getWasmPBKDF2('pwd', 'salt', 1, 1, null)).rejects.toThrow();
+  expect(() => getWasmPBKDF2('pwd', 'salt', 1, 1, null as any)).rejects.toThrow();
   expect(() => getWasmPBKDF2('pwd', 'salt', 1, 1, '' as any)).rejects.toThrow();
   expect(() => getWasmPBKDF2('pwd', 'salt', 1, 1, 'x' as any)).rejects.toThrow();
 
   expect(() => (pbkdf2 as any)()).rejects.toThrow();
-  expect(() => (pbkdf2 as any)(() => {})).rejects.toThrow();
+  expect(() => (pbkdf2 as any)(() => { })).rejects.toThrow();
   expect(() => (pbkdf2 as any)([])).rejects.toThrow();
 
   expect(() => pbkdf2({
@@ -44,7 +57,7 @@ test('invalid parameters', () => {
     salt: 'y',
     iterations: 1,
     hashLength: 32,
-    hashFunction: null,
+    hashFunction: null as any,
   })).rejects.toThrow();
 
   expect(() => pbkdf2({

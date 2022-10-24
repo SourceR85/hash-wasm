@@ -1,4 +1,5 @@
-import { getDigestHex, IDataType } from './util';
+import { getDigestHex } from './util';
+import type { IDataType } from './util';
 import { WASMInterface } from './WASMInterface';
 import wasmJson from '../wasm/scrypt.wasm.json';
 import { pbkdf2 } from './pbkdf2';
@@ -84,9 +85,9 @@ async function scryptInternal(options: ScryptOptions): Promise<string | Uint8Arr
 }
 
 // eslint-disable-next-line no-bitwise
-const isPowerOfTwo = (v: number): boolean => v && !(v & (v - 1));
+const isPowerOfTwo = (v: number): boolean => v > 0 && !(v & (v - 1));
 
-const validateOptions = (options: ScryptOptions) => {
+const validateOptions = (options: ScryptOptions): void => {
   if (!options || typeof options !== 'object') {
     throw new Error('Invalid options parameter. It requires an object.');
   }

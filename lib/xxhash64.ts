@@ -1,21 +1,21 @@
-import { WASMInterface, IWASMInterface, IHasher } from './WASMInterface';
+import { WASMInterface } from './WASMInterface';
+import type { IWASMInterface, IHasher } from './WASMInterface';
 import Mutex from './mutex';
 import wasmJson from '../wasm/xxhash64.wasm.json';
 import lockedCreate from './lockedCreate';
-import { IDataType } from './util';
+import type { IDataType } from './util';
 
 const mutex = new Mutex();
-let wasmCache: IWASMInterface = null;
+let wasmCache: IWASMInterface;
 const seedBuffer = new ArrayBuffer(8);
 
-function validateSeed(seed: number) {
+function validateSeed(seed: number): void {
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xFFFFFFFF) {
-    return new Error('Seed must be given as two valid 32-bit long unsigned integers (lo + high).');
+    throw new Error('Seed must be given as two valid 32-bit long unsigned integers (lo + high).');
   }
-  return null;
 }
 
-function writeSeed(arr: ArrayBuffer, low: number, high: number) {
+function writeSeed(arr: ArrayBuffer, low: number, high: number): void {
   // write in little-endian format
   const buffer = new DataView(arr);
   buffer.setUint32(0, low, true);
@@ -31,35 +31,15 @@ function writeSeed(arr: ArrayBuffer, low: number, high: number) {
  *  initialize the internal state of the algorithm (defaults to 0)
  * @returns Computed hash as a hexadecimal string
  */
-export function xxhash64(
-  data: IDataType, seedLow = 0, seedHigh = 0,
-): Promise<string> {
-  if (validateSeed(seedLow)) {
-    return Promise.reject(validateSeed(seedLow));
-  }
+export async function xxhash64(data: IDataType, seedLow = 0, seedHigh = 0): Promise<string> {
+  validateSeed(seedLow);
+  validateSeed(seedHigh);
 
-  if (validateSeed(seedHigh)) {
-    return Promise.reject(validateSeed(seedHigh));
-  }
+  if (!wasmCache) wasmCache = await lockedCreate(mutex, wasmJson, 8);
 
-  if (wasmCache === null) {
-    return lockedCreate(mutex, wasmJson, 8)
-      .then((wasm) => {
-        wasmCache = wasm;
-        writeSeed(seedBuffer, seedLow, seedHigh);
-        wasmCache.writeMemory(new Uint8Array(seedBuffer));
-        return wasmCache.calculate(data);
-      });
-  }
-
-  try {
-    writeSeed(seedBuffer, seedLow, seedHigh);
-    wasmCache.writeMemory(new Uint8Array(seedBuffer));
-    const hash = wasmCache.calculate(data);
-    return Promise.resolve(hash);
-  } catch (err) {
-    return Promise.reject(err);
-  }
+  writeSeed(seedBuffer, seedLow, seedHigh);
+  wasmCache.writeMemory(new Uint8Array(seedBuffer));
+  return wasmCache.calculate(data);
 }
 
 /**
@@ -69,33 +49,28 @@ export function xxhash64(
  * @param seedHigh Higher 32 bits of the number used to
  *  initialize the internal state of the algorithm (defaults to 0)
  */
-export function createXXHash64(seedLow = 0, seedHigh = 0): Promise<IHasher> {
-  if (validateSeed(seedLow)) {
-    return Promise.reject(validateSeed(seedLow));
-  }
+export async function createXXHash64(seedLow = 0, seedHigh = 0): Promise<IHasher> {
+  validateSeed(seedLow);
+  validateSeed(seedHigh);
 
-  if (validateSeed(seedHigh)) {
-    return Promise.reject(validateSeed(seedHigh));
-  }
+  const wasm = await WASMInterface(wasmJson, 8);
+  const instanceBuffer = new ArrayBuffer(8);
+  writeSeed(instanceBuffer, seedLow, seedHigh);
+  wasm.writeMemory(new Uint8Array(instanceBuffer));
+  wasm.init();
 
-  return WASMInterface(wasmJson, 8).then((wasm) => {
-    const instanceBuffer = new ArrayBuffer(8);
-    writeSeed(instanceBuffer, seedLow, seedHigh);
-    wasm.writeMemory(new Uint8Array(instanceBuffer));
-    wasm.init();
-    const obj: IHasher = {
-      init: () => {
-        wasm.writeMemory(new Uint8Array(instanceBuffer));
-        wasm.init();
-        return obj;
-      },
-      update: (data) => { wasm.update(data); return obj; },
-      digest: (outputType) => wasm.digest(outputType) as any,
-      save: () => wasm.save(),
-      load: (data) => { wasm.load(data); return obj; },
-      blockSize: 32,
-      digestSize: 8,
-    };
-    return obj;
-  });
+  const obj: IHasher = {
+    init: () => {
+      wasm.writeMemory(new Uint8Array(instanceBuffer));
+      wasm.init();
+      return obj;
+    },
+    update: (data) => { wasm.update(data); return obj; },
+    digest: (outputType) => wasm.digest(outputType),
+    save: () => wasm.save(),
+    load: (data) => { wasm.load(data); return obj; },
+    blockSize: 32,
+    digestSize: 8,
+  };
+  return obj;
 }

@@ -22,5 +22,3 @@ docker run \
 node scripts/make_json
 node --max-old-space-size=4096 ./node_modules/rollup/dist/bin/rollup -c
 npx tsc ./lib/index --outDir ./dist --downlevelIteration --emitDeclarationOnly --declaration --resolveJsonModule --allowSyntheticDefaultImports
-
-#-s ASSERTIONS=1 \

@@ -2,10 +2,15 @@ import {
   decodeBase64,
   encodeBase64,
   getDecodeBase64Length,
-  getDigestHex, getUInt8Buffer, IDataType, writeHexToUInt8,
+  getDigestHex,
+  getUInt8Buffer,
+  writeHexToUInt8,
 } from './util';
+import type { IDataType } from './util';
+
 import { createBLAKE2b } from './blake2b';
-import { WASMInterface, IHasher } from './WASMInterface';
+import { WASMInterface } from './WASMInterface';
+import type { IHasher } from './WASMInterface';
 import wasmJson from '../wasm/argon2.wasm.json';
 
 export interface IArgon2Options {
@@ -100,7 +105,7 @@ async function hashFunc(blake512: IHasher, buf: Uint8Array, len: number): Promis
   return ret;
 }
 
-function getHashType(type: IArgon2OptionsExtended['hashType']): number {
+function getHashType(type: IArgon2OptionsExtended['hashType']): 0 | 1 | 2 {
   switch (type) {
     case 'd':
       return 0;
@@ -185,7 +190,7 @@ async function argon2Internal(options: IArgon2OptionsExtended): Promise<string |
   return res;
 }
 
-const validateOptions = (options: IArgon2Options) => {
+const validateOptions = (options: IArgon2Options): void => {
   if (!options || typeof options !== 'object') {
     throw new Error('Invalid options parameter. It requires an object.');
   }
@@ -308,10 +313,13 @@ const getHashParameters = (password: IDataType, encoded: string): IArgon2Options
   }
 
   const parsedParameters: Partial<IArgon2Options> = {};
-  const paramMap = { m: 'memorySize', p: 'parallelism', t: 'iterations' };
+  type ParamValue = 'memorySize' | 'parallelism' | 'iterations';
+  type ParamMap = Record<'m' | 'p' | 't', ParamValue>
+  const paramMap: ParamMap = { m: 'memorySize', p: 'parallelism', t: 'iterations' };
   parameters.split(',').forEach((x) => {
     const [n, v] = x.split('=');
-    parsedParameters[paramMap[n]] = parseInt(v, 10);
+    const param = paramMap[n as keyof ParamMap];
+    parsedParameters[param] = parseInt(v, 10);
   });
 
   return {
@@ -324,7 +332,7 @@ const getHashParameters = (password: IDataType, encoded: string): IArgon2Options
   } as IArgon2OptionsExtended;
 };
 
-const validateVerifyOptions = (options: Argon2VerifyOptions) => {
+const validateVerifyOptions = (options: Argon2VerifyOptions): void => {
   if (!options || typeof options !== 'object') {
     throw new Error('Invalid options parameter. It requires an object.');
   }
